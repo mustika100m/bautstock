@@ -1,0 +1,280 @@
+// Prisma Schema for BautStock
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  name      String
+  password  String
+  role      String   // OWNER, ADMIN, KASIR, GUDANG
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  userName  String
+  action    String   // LOGIN, ADD_PRODUCT, EDIT_PRODUCT, PRICE_CHANGE, SALE_TRANSACTION, PURCHASE_TRANSACTION, STOCK_ADJUSTMENT, CANCEL_TRANSACTION, CUSTOMER_UPDATE, SUPPLIER_UPDATE
+  details   String
+  timestamp DateTime @default(now())
+}
+
+model Product {
+  id             String             @id @default(uuid())
+  sku            String             @unique
+  name           String
+  category       String             // Baut, Mur, Ring, Sekrup, Anchor, dll
+  itemType       String             // Hex Bolt, L Bolt, Nylon Lock Nut, Flat Washer, dll
+  metric         String             // M4, M6, M8, M10, M12, M16, M20, dll
+  length         String             // 10 mm, 20 mm, 35 mm, 50 mm, 100 mm, dll
+  material       String             // Baja Karbon, Stainless Steel 304, Stainless Steel 316, Kuningan
+  grade          String             // 4.8, 8.8, 10.9, 12.9, A2-70, dll
+  finishing      String             // Zinc Plating, Black Oxide, Galvanized, Polished, Yellow Zinc
+  unit           String             @default("Pcs") // Pcs, Box, Dus, Kg, Set
+  pcsPerBox      Int                @default(100)
+  warehouse      String             @default("Gudang Utama")
+  rackLocation   String             @default("Rak A")
+  boxBin         String             @default("A-01")
+  stock          Int                @default(0)
+  minStock       Int                @default(10)
+  buyPrice       Float              @default(0)
+  cashPrice      Float              @default(0)
+  tempoPrice     Float              @default(0)
+  retailPrice    Float              @default(0)
+  wholesalePrice Float              @default(0)
+  barcode        String?            @unique
+  status         String             @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  purchaseItems    PurchaseItem[]
+  saleItems        SaleItem[]
+  stockMovements   StockMovement[]
+  stockOpnameItems StockOpnameItem[]
+
+  @@unique([category, itemType, metric, length, material, grade, finishing], name: "unique_product_spec")
+  @@index([sku])
+  @@index([barcode])
+  @@index([category, itemType])
+}
+
+model Customer {
+  id               String       @id @default(uuid())
+  code             String       @unique
+  name             String
+  phone            String
+  address          String
+  customerType     String       @default("RETAIL") // RETAIL, GROSIR, TEMPO, DISTRIBUTOR
+  creditLimit      Float        @default(0)
+  paymentTermsDays Int          @default(0)
+  notes            String?
+  status           String       @default("ACTIVE")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  sales            Sale[]
+  receivables      Receivable[]
+}
+
+model Supplier {
+  id            String     @id @default(uuid())
+  code          String     @unique
+  name          String
+  contactPerson String
+  phone         String
+  address       String
+  notes         String?
+  status        String     @default("ACTIVE")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  purchases     Purchase[]
+  payables      Payable[]
+}
+
+model Purchase {
+  id                String         @id @default(uuid())
+  invoiceNo         String         @unique
+  supplierInvoiceNo String
+  supplierId        String
+  supplier          Supplier       @relation(fields: [supplierId], references: [id])
+  date              DateTime       @default(now())
+  totalAmount       Float
+  notes             String?
+  status            String         @default("COMPLETED") // COMPLETED, CANCELLED
+  cancelReason      String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  items             PurchaseItem[]
+  payable           Payable?
+}
+
+model PurchaseItem {
+  id         String   @id @default(uuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  qty        Int
+  buyPrice   Float
+  discount   Float    @default(0)
+  subtotal   Float
+}
+
+model Payable {
+  id              String           @id @default(uuid())
+  purchaseId      String           @unique
+  purchase        Purchase         @relation(fields: [purchaseId], references: [id])
+  supplierId      String
+  supplier        Supplier         @relation(fields: [supplierId], references: [id])
+  totalAmount     Float
+  paidAmount      Float            @default(0)
+  remainingAmount Float
+  dueDate         DateTime
+  status          String           @default("UNPAID") // UNPAID, PARTIAL, PAID
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  payments        PayablePayment[]
+}
+
+model PayablePayment {
+  id            String   @id @default(uuid())
+  payableId     String
+  payable       Payable  @relation(fields: [payableId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentDate   DateTime @default(now())
+  paymentMethod String   @default("TRANSFER") // CASH, TRANSFER
+  notes         String?
+  createdAt     DateTime @default(now())
+}
+
+model Sale {
+  id            String     @id @default(uuid())
+  invoiceNo     String     @unique
+  date          DateTime   @default(now())
+  customerId    String?
+  customer      Customer?  @relation(fields: [customerId], references: [id])
+  customerName  String     @default("Pelanggan Umum")
+  priceType     String     @default("CASH") // CASH, TEMPO, RETAIL, WHOLESALE
+  paymentMethod String     @default("CASH") // CASH, TRANSFER, CREDIT
+  totalAmount   Float
+  discount      Float      @default(0)
+  grandTotal    Float
+  paidAmount    Float      @default(0)
+  changeAmount  Float      @default(0)
+  paymentStatus String     @default("PAID") // PAID, UNPAID, PARTIAL
+  status        String     @default("COMPLETED") // COMPLETED, CANCELLED
+  cancelReason  String?
+  createdBy     String     @default("Kasir")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  items         SaleItem[]
+  receivable    Receivable?
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  qty       Int
+  price     Float
+  discount  Float   @default(0)
+  subtotal  Float
+}
+
+model Receivable {
+  id              String              @id @default(uuid())
+  saleId          String              @unique
+  sale            Sale                @relation(fields: [saleId], references: [id])
+  customerId      String
+  customer        Customer            @relation(fields: [customerId], references: [id])
+  totalAmount     Float
+  paidAmount      Float               @default(0)
+  remainingAmount Float
+  dueDate         DateTime
+  status          String              @default("UNPAID") // UNPAID, PARTIAL, PAID
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  payments        ReceivablePayment[]
+}
+
+model ReceivablePayment {
+  id            String     @id @default(uuid())
+  receivableId  String
+  receivable    Receivable @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentDate   DateTime   @default(now())
+  paymentMethod String     @default("CASH") // CASH, TRANSFER
+  notes         String?
+  createdAt     DateTime   @default(now())
+}
+
+model StockMovement {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        String   // PURCHASE, SALE, STOCK_ADJUSTMENT, RETURN_IN, RETURN_OUT, INITIAL_STOCK
+  refNo       String?
+  qtyIn       Int      @default(0)
+  qtyOut      Int      @default(0)
+  stockBefore Int
+  stockAfter  Int
+  userId      String?
+  userName    String   @default("System")
+  notes       String?
+  timestamp   DateTime @default(now())
+
+  @@index([productId])
+  @@index([timestamp])
+}
+
+model StockOpname {
+  id        String            @id @default(uuid())
+  opnameNo  String            @unique
+  date      DateTime          @default(now())
+  status    String            @default("PROCESSED") // DRAFT, PROCESSED, CANCELLED
+  createdBy String            @default("Gudang")
+  notes     String?
+  createdAt DateTime          @default(now())
+
+  items     StockOpnameItem[]
+}
+
+model StockOpnameItem {
+  id            String      @id @default(uuid())
+  stockOpnameId String
+  stockOpname   StockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  systemStock   Int
+  physicalStock Int
+  difference    Int
+  notes         String?
+}
+
+model StoreSetting {
+  id                 String   @id @default("1")
+  storeName          String   @default("MUSTIKA BAUT")
+  address            String   @default("Jl. Industri Raya No. 88, Jakarta Barat")
+  phone              String   @default("021-5558888 / 0812-3456-7890")
+  receiptHeader      String   @default("PUSAT GROSIR & RETAIL BAUT, MUR, RING, SEKRUP")
+  receiptFooter      String   @default("Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.\nTerima kasih atas kunjungan Anda!")
+  allowNegativeStock Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+}
