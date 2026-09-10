@@ -10,11 +10,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username dan password wajib diisi' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const cleanUsername = username.trim();
+    const cleanPassword = password.trim();
+
+    const user = await prisma.user.findFirst({
+      where: {
+        username: {
+          equals: cleanUsername,
+          mode: 'insensitive',
+        },
+      },
     });
 
-    if (!user || user.password !== password || !user.active) {
+    if (!user || user.password !== cleanPassword || !user.active) {
       return NextResponse.json({ error: 'Username atau password salah / akun nonaktif' }, { status: 401 });
     }
 
