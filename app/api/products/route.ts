@@ -23,11 +23,16 @@ export async function GET(req: NextRequest) {
 
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { sku: { contains: search } },
-        { barcode: { contains: search } },
-        { category: { contains: search } },
-        { itemType: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { barcode: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+        { itemType: { contains: search, mode: 'insensitive' } },
+        { metric: { contains: search, mode: 'insensitive' } },
+        { length: { contains: search, mode: 'insensitive' } },
+        { material: { contains: search, mode: 'insensitive' } },
+        { grade: { contains: search, mode: 'insensitive' } },
+        { finishing: { contains: search, mode: 'insensitive' } },
       ];
     }
 
