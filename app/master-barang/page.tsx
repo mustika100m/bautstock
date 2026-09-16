@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   UploadCloud,
   FileText,
+  Copy,
 } from 'lucide-react';
 import { formatRupiah, getStockStatus } from '@/lib/formatters';
 import { Modal } from '@/components/ui/Modal';
@@ -289,6 +290,35 @@ export default function MasterBarangPage() {
     setIsModalOpen(true);
   };
 
+  const handleOpenDuplicateModal = (prod: any) => {
+    setEditingProduct(null);
+    resetCustomFields();
+    setFormData({
+      sku: '',
+      name: prod.name || '',
+      category: prod.category,
+      itemType: prod.itemType,
+      metric: prod.metric,
+      length: prod.length,
+      material: prod.material,
+      grade: prod.grade,
+      finishing: prod.finishing,
+      unit: prod.unit,
+      pcsPerBox: prod.pcsPerBox,
+      warehouse: prod.warehouse,
+      rackLocation: prod.rackLocation,
+      boxBin: prod.boxBin,
+      stock: prod.stock,
+      minStock: prod.minStock,
+      buyPrice: prod.buyPrice,
+      cashPrice: prod.cashPrice,
+      tempoPrice: prod.tempoPrice,
+      retailPrice: prod.retailPrice,
+      wholesalePrice: prod.wholesalePrice,
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -439,7 +469,7 @@ export default function MasterBarangPage() {
         <Search className="w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder="Cari SKU, nama barang, barcode, atau kategori..."
+          placeholder="Cari SKU, nama barang, atau kategori..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 text-xs font-semibold focus:outline-none"
@@ -452,12 +482,11 @@ export default function MasterBarangPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider border-b border-slate-100">
               <tr>
-                <th className="py-3 px-4">SKU / Barcode</th>
+                <th className="py-3 px-4">SKU</th>
                 <th className="py-3 px-4">Nama Produk & Specs</th>
                 <th className="py-3 px-4">Lokasi Gudang</th>
                 <th className="py-3 px-4 text-center">Stok / Min</th>
-                <th className="py-3 px-4 text-right">Harga Beli</th>
-                <th className="py-3 px-4 text-right">Harga Cash</th>
+                <th className="py-3 px-4 text-right">Harga Retail</th>
                 <th className="py-3 px-4 text-right">Harga Grosir</th>
                 <th className="py-3 px-4 text-center">Aksi</th>
               </tr>
@@ -470,7 +499,6 @@ export default function MasterBarangPage() {
                   <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-extrabold text-sky-700">{prod.sku}</div>
-                      <div className="text-[10px] font-mono text-slate-400">{prod.barcode || '-'}</div>
                     </td>
                     <td className="py-3 px-4 max-w-xs">
                       <div className="font-bold text-slate-800">{prod.name}</div>
@@ -487,11 +515,8 @@ export default function MasterBarangPage() {
                         {prod.stock} {prod.unit}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-slate-600">
-                      {formatRupiah(prod.buyPrice)}
-                    </td>
-                    <td className="py-3 px-4 text-right font-extrabold text-emerald-700">
-                      {formatRupiah(prod.cashPrice)}
+                    <td className="py-3 px-4 text-right font-extrabold text-purple-700">
+                      {formatRupiah(prod.retailPrice)}
                     </td>
                     <td className="py-3 px-4 text-right font-extrabold text-amber-700">
                       {formatRupiah(prod.wholesalePrice)}
@@ -499,13 +524,22 @@ export default function MasterBarangPage() {
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
+                          onClick={() => handleOpenDuplicateModal(prod)}
+                          title="Duplikat Barang"
+                          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleOpenEditModal(prod)}
+                          title="Edit Barang"
                           className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeletingProduct(prod)}
+                          title="Hapus / Nonaktifkan Barang"
                           className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -518,7 +552,7 @@ export default function MasterBarangPage() {
 
               {paginatedProducts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     Tidak ada produk ditemukan
                   </td>
                 </tr>
