@@ -10,9 +10,9 @@ export async function GET(req: NextRequest) {
     const where: any = { status: 'ACTIVE' };
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { code: { contains: search } },
-        { phone: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
       ];
     }
 
