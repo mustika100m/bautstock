@@ -10,9 +10,9 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { supplier: { name: { contains: search } } },
-        { purchase: { invoiceNo: { contains: search } } },
-        { purchase: { supplierInvoiceNo: { contains: search } } },
+        { supplier: { name: { contains: search, mode: 'insensitive' } } },
+        { purchase: { invoiceNo: { contains: search, mode: 'insensitive' } } },
+        { purchase: { supplierInvoiceNo: { contains: search, mode: 'insensitive' } } },
       ];
     }
     if (status) {
