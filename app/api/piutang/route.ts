@@ -10,8 +10,8 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { customer: { name: { contains: search } } },
-        { sale: { invoiceNo: { contains: search } } },
+        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { sale: { invoiceNo: { contains: search, mode: 'insensitive' } } },
       ];
     }
     if (status) {
