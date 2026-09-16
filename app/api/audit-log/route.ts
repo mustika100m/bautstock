@@ -9,9 +9,9 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { userName: { contains: search } },
-        { action: { contains: search } },
-        { details: { contains: search } },
+        { userName: { contains: search, mode: 'insensitive' } },
+        { action: { contains: search, mode: 'insensitive' } },
+        { details: { contains: search, mode: 'insensitive' } },
       ];
     }
 
