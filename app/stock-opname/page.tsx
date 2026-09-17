@@ -106,11 +106,12 @@ export default function StockOpnamePage() {
     }
   };
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProducts = products.filter((p) => {
+    if (!search || search.trim() === '') return true;
+    const kwList = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const targetText = `${p.sku} ${p.name} ${p.category} ${p.itemType} ${p.metric} ${p.length} ${p.material} ${p.grade} ${p.finishing} ${p.barcode || ''}`.toLowerCase();
+    return kwList.every((kw) => targetText.includes(kw));
+  });
 
   return (
     <div className="space-y-6">
