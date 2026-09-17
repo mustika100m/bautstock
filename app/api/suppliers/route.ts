@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
+import { generateUniqueSupplierCode } from '@/lib/code-generator';
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,11 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nama supplier dan nomor HP wajib diisi' }, { status: 400 });
     }
 
-    let supCode = code;
-    if (!supCode) {
-      const count = await prisma.supplier.count();
-      supCode = `SUP-${String(count + 1).padStart(4, '0')}`;
-    }
+    const supCode = await generateUniqueSupplierCode(code);
 
     const supplier = await prisma.supplier.create({
       data: {
