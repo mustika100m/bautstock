@@ -21,19 +21,22 @@ export async function GET(req: NextRequest) {
       status: 'ACTIVE',
     };
 
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
-        { itemType: { contains: search, mode: 'insensitive' } },
-        { metric: { contains: search, mode: 'insensitive' } },
-        { length: { contains: search, mode: 'insensitive' } },
-        { material: { contains: search, mode: 'insensitive' } },
-        { grade: { contains: search, mode: 'insensitive' } },
-        { finishing: { contains: search, mode: 'insensitive' } },
-      ];
+    if (search && search.trim() !== '') {
+      const keywords = search.trim().split(/\s+/).filter(Boolean);
+      where.AND = keywords.map((kw) => ({
+        OR: [
+          { name: { contains: kw, mode: 'insensitive' } },
+          { sku: { contains: kw, mode: 'insensitive' } },
+          { barcode: { contains: kw, mode: 'insensitive' } },
+          { category: { contains: kw, mode: 'insensitive' } },
+          { itemType: { contains: kw, mode: 'insensitive' } },
+          { metric: { contains: kw, mode: 'insensitive' } },
+          { length: { contains: kw, mode: 'insensitive' } },
+          { material: { contains: kw, mode: 'insensitive' } },
+          { grade: { contains: kw, mode: 'insensitive' } },
+          { finishing: { contains: kw, mode: 'insensitive' } },
+        ],
+      }));
     }
 
     if (barcode) {
@@ -58,18 +61,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Also fetch distinct spec values for cascading dropdowns
-    const allActive = await prisma.product.findMany({
-      where: { status: 'ACTIVE' },
-      select: {
-        category: true,
-        itemType: true,
-        metric: true,
-        length: true,
-        material: true,
-        grade: true,
-        finishing: true,
-      },
-    });
+    const allActive = await prisma.product.findMany({ where: { status: 'ACTIVE' } });
     const categories = Array.from(new Set(allActive.map((p) => p.category))).filter(Boolean).sort();
     const itemTypes = Array.from(new Set(allActive.filter((p) => !category || p.category === category).map((p) => p.itemType))).filter(Boolean).sort();
     const metrics = Array.from(new Set(allActive.filter((p) => (!category || p.category === category) && (!itemType || p.itemType === itemType)).map((p) => p.metric))).filter(Boolean).sort();
