@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
+import { generateUniqueCustomerCode } from '@/lib/code-generator';
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,12 +47,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nama dan nomor HP wajib diisi' }, { status: 400 });
     }
 
-    // Auto generate code if missing
-    let custCode = code;
-    if (!custCode) {
-      const count = await prisma.customer.count();
-      custCode = `PLG-${String(count + 1).padStart(4, '0')}`;
-    }
+    // Auto generate code if missing or duplicate-safe
+    const custCode = await generateUniqueCustomerCode(code);
 
     const customer = await prisma.customer.create({
       data: {
