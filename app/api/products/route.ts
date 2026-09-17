@@ -58,7 +58,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Also fetch distinct spec values for cascading dropdowns
-    const allActive = await prisma.product.findMany({ where: { status: 'ACTIVE' } });
+    const allActive = await prisma.product.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        category: true,
+        itemType: true,
+        metric: true,
+        length: true,
+        material: true,
+        grade: true,
+        finishing: true,
+      },
+    });
     const categories = Array.from(new Set(allActive.map((p) => p.category))).filter(Boolean).sort();
     const itemTypes = Array.from(new Set(allActive.filter((p) => !category || p.category === category).map((p) => p.itemType))).filter(Boolean).sort();
     const metrics = Array.from(new Set(allActive.filter((p) => (!category || p.category === category) && (!itemType || p.itemType === itemType)).map((p) => p.metric))).filter(Boolean).sort();
