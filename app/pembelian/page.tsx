@@ -219,11 +219,12 @@ export default function PembelianPage() {
     }
   };
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchProduct.toLowerCase())
-  );
+  const filteredProducts = products.filter((p) => {
+    if (!searchProduct || searchProduct.trim() === '') return true;
+    const kwList = searchProduct.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const targetText = `${p.sku} ${p.name} ${p.category} ${p.itemType} ${p.metric} ${p.length} ${p.material} ${p.grade} ${p.finishing} ${p.barcode || ''}`.toLowerCase();
+    return kwList.every((kw) => targetText.includes(kw));
+  });
 
   return (
     <div className="space-y-6">
