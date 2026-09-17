@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { adjustProductStock } from '@/lib/stock';
 import { recordAuditLog } from '@/lib/audit';
+import { generateUniqueCustomerCode } from '@/lib/code-generator';
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,8 +64,7 @@ export async function POST(req: NextRequest) {
 
     // Handle new customer auto-registration if selected
     if (customerMode === 'new' && customerName && customerName !== 'Pelanggan Umum') {
-      const custCount = await prisma.customer.count();
-      const newCode = `PLG-${String(custCount + 1).padStart(4, '0')}`;
+      const newCode = await generateUniqueCustomerCode();
       const createdCust = await prisma.customer.create({
         data: {
           code: newCode,
