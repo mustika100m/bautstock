@@ -2,9 +2,11 @@ export interface ProductSpecInput {
   category?: string;
   itemType?: string;
   metric?: string;
+  thread?: string;
   length?: string;
   material?: string;
   grade?: string;
+  materialGrade?: string;
   finishing?: string;
 }
 
@@ -22,11 +24,20 @@ export function generateAutoSku(spec: ProductSpecInput): string {
     'Rivet': 'RVT',
   };
 
-  const category = (spec.category || 'Baut').trim();
+  let category = spec.category || '';
+  let rawItemType = spec.itemType || '';
+  if (!category && rawItemType) {
+    const firstWord = rawItemType.trim().split(/\s+/)[0];
+    if (catCodeMap[firstWord]) {
+      category = firstWord;
+      rawItemType = rawItemType.replace(firstWord, '').trim();
+    }
+  }
+  if (!category) category = 'Baut';
+
   const catCode = catCodeMap[category] || category.substring(0, 3).toUpperCase();
 
-  // Clean itemType for shortcode
-  let itemType = (spec.itemType || 'Hex Bolt').trim();
+  let itemType = (rawItemType || 'Hex Bolt').trim();
   let itemCode = itemType
     .replace(/\(.*?\)/g, '')
     .trim()
@@ -44,26 +55,26 @@ export function generateAutoSku(spec: ProductSpecInput): string {
     .replace(/CARRIAGE BOLT/gi, 'CRG')
     .replace(/\s+/g, '-');
 
-  // Metric handling (e.g. M8, 1/4" UNC, 1/2" UNF)
-  let metric = (spec.metric || 'M8').trim();
+  let metric = (spec.thread || spec.metric || 'M8').trim();
   let metricCode = metric
     .replace(/"/g, '')
     .replace(/\s+/g, '')
     .toUpperCase();
 
-  // Length handling (e.g. 50 mm -> 50M, 2" -> 2IN, 1-1/2" -> 1.5IN)
   let length = (spec.length || '50 mm').trim();
   let lengthCode = length
     .replace(/\s*mm/gi, 'M')
     .replace(/"/gi, 'IN')
     .replace(/\s+/g, '');
 
-  // Grade handling
-  let grade = (spec.grade || '8.8').trim();
-  let gradeCode = grade
-    .replace(/\s+/g, '')
-    .replace(/StainlessSteel/gi, 'SS')
-    .toUpperCase();
+  let rawMatGrade = spec.materialGrade || `${spec.material || ''} ${spec.grade || ''}`.trim() || '8.8';
+  let gradeCode = '8.8';
+  const gradeMatch = rawMatGrade.match(/(12\.9|10\.9|8\.8|4\.8|316|304|A4-80|A2-70|Class 10|Class 8)/i);
+  if (gradeMatch) {
+    gradeCode = gradeMatch[1].toUpperCase();
+  } else {
+    gradeCode = rawMatGrade.replace(/\s+/g, '').substring(0, 5).toUpperCase();
+  }
 
   const parts = [catCode, itemCode, metricCode, lengthCode, gradeCode].filter(Boolean);
   return parts.join('-');

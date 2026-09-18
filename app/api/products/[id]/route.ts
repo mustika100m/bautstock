@@ -6,11 +6,26 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const body = await req.json();
     const { id } = params;
-    const { userName = 'Admin', ...updateData } = body;
+    const { userName = 'Admin', thread, materialGrade, ...updateData } = body;
 
     const currentProduct = await prisma.product.findUnique({ where: { id } });
     if (!currentProduct) {
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
+    }
+
+    if (thread !== undefined) {
+      updateData.metric = thread;
+    }
+
+    if (materialGrade !== undefined) {
+      const gradeMatch = materialGrade.match(/(12\.9|10\.9|8\.8|4\.8|316|304|A4-80|A2-70|Class 10|Class 8)/i);
+      if (gradeMatch) {
+        updateData.grade = gradeMatch[1].toUpperCase();
+        updateData.material = materialGrade.replace(gradeMatch[0], '').replace(/[()]/g, '').trim() || 'Baja Karbon';
+      } else {
+        updateData.material = materialGrade;
+        updateData.grade = '-';
+      }
     }
 
     // Check price changes

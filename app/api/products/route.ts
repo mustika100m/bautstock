@@ -10,10 +10,12 @@ export async function GET(req: NextRequest) {
     const barcode = searchParams.get('barcode') || '';
     const category = searchParams.get('category') || '';
     const itemType = searchParams.get('itemType') || '';
-    const metric = searchParams.get('metric') || '';
+    const metric = searchParams.get('metric') || searchParams.get('thread') || '';
+    const thread = searchParams.get('thread') || searchParams.get('metric') || '';
     const length = searchParams.get('length') || '';
     const material = searchParams.get('material') || '';
     const grade = searchParams.get('grade') || '';
+    const materialGrade = searchParams.get('materialGrade') || '';
     const finishing = searchParams.get('finishing') || '';
     const minStockOnly = searchParams.get('minStockOnly') === 'true';
 
@@ -45,10 +47,16 @@ export async function GET(req: NextRequest) {
 
     if (category) where.category = category;
     if (itemType) where.itemType = itemType;
-    if (metric) where.metric = metric;
+    if (thread) where.metric = { contains: thread, mode: 'insensitive' };
     if (length) where.length = length;
     if (material) where.material = material;
     if (grade) where.grade = grade;
+    if (materialGrade) {
+      where.OR = [
+        { material: { contains: materialGrade, mode: 'insensitive' } },
+        { grade: { contains: materialGrade, mode: 'insensitive' } },
+      ];
+    }
     if (finishing) where.finishing = finishing;
 
     let products = await prisma.product.findMany({
@@ -60,26 +68,26 @@ export async function GET(req: NextRequest) {
       products = products.filter((p) => p.stock <= p.minStock);
     }
 
-    // Also fetch distinct spec values for cascading dropdowns
+    // Fetch distinct spec values for cascading dropdowns
     const allActive = await prisma.product.findMany({ where: { status: 'ACTIVE' } });
-    const categories = Array.from(new Set(allActive.map((p) => p.category))).filter(Boolean).sort();
-    const itemTypes = Array.from(new Set(allActive.filter((p) => !category || p.category === category).map((p) => p.itemType))).filter(Boolean).sort();
-    const metrics = Array.from(new Set(allActive.filter((p) => (!category || p.category === category) && (!itemType || p.itemType === itemType)).map((p) => p.metric))).filter(Boolean).sort();
-    const lengths = Array.from(new Set(allActive.filter((p) => (!category || p.category === category) && (!itemType || p.itemType === itemType) && (!metric || p.metric === metric)).map((p) => p.length))).filter(Boolean).sort();
-    const materials = Array.from(new Set(allActive.map((p) => p.material))).filter(Boolean).sort();
-    const grades = Array.from(new Set(allActive.map((p) => p.grade))).filter(Boolean).sort();
+    const materialGrades = Array.from(new Set(allActive.map((p) => `${p.material} ${p.grade}`.replace(/-$/, '').trim()))).filter(Boolean).sort();
+    const threads = Array.from(new Set(allActive.map((p) => p.metric))).filter(Boolean).sort();
+    const itemTypes = Array.from(new Set(allActive.map((p) => p.itemType))).filter(Boolean).sort();
+    const lengths = Array.from(new Set(allActive.map((p) => p.length))).filter(Boolean).sort();
     const finishings = Array.from(new Set(allActive.map((p) => p.finishing))).filter(Boolean).sort();
 
     return NextResponse.json({
       products,
       specs: {
-        categories,
+        materialGrades,
+        threads,
         itemTypes,
-        metrics,
         lengths,
-        materials,
-        grades,
         finishings,
+        categories: Array.from(new Set(allActive.map((p) => p.category))).filter(Boolean).sort(),
+        metrics: threads,
+        materials: Array.from(new Set(allActive.map((p) => p.material))).filter(Boolean).sort(),
+        grades: Array.from(new Set(allActive.map((p) => p.grade))).filter(Boolean).sort(),
       },
     });
   } catch (error: any) {
@@ -90,15 +98,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
+    let {
       sku,
       name,
       category,
       itemType,
       metric,
+      thread,
       length,
       material,
       grade,
+      materialGrade,
       finishing,
       unit,
       pcsPerBox,
@@ -116,13 +126,33 @@ export async function POST(req: NextRequest) {
       userName = 'Admin',
     } = body;
 
-    if (!category || !itemType) {
-      return NextResponse.json({ error: 'Kategori dan Jenis wajib diisi' }, { status: 400 });
+    const finalMetric = thread || metric || 'M8';
+    const rawItemType = itemType || 'Hex Bolt';
+    if (!category && rawItemType) {
+      const firstWord = rawItemType.trim().split(/\s+/)[0];
+      category = firstWord;
+    }
+    if (!category) category = 'Baut';
+
+    let finalMaterial = material || '';
+    let finalGrade = grade || '';
+    if (materialGrade) {
+      const gradeMatch = materialGrade.match(/(12\.9|10\.9|8\.8|4\.8|316|304|A4-80|A2-70|Class 10|Class 8)/i);
+      if (gradeMatch) {
+        finalGrade = gradeMatch[1].toUpperCase();
+        finalMaterial = materialGrade.replace(gradeMatch[0], '').replace(/[()]/g, '').trim() || 'Baja Karbon';
+      } else {
+        finalMaterial = materialGrade;
+        finalGrade = '-';
+      }
+    } else {
+      if (!finalMaterial) finalMaterial = 'Baja Karbon';
+      if (!finalGrade) finalGrade = '8.8';
     }
 
     const finalSku = (sku && sku.trim() !== '')
       ? sku.trim()
-      : generateAutoSku({ category, itemType, metric, length, material, grade, finishing });
+      : generateAutoSku({ category, itemType: rawItemType, thread: finalMetric, length, materialGrade: materialGrade || `${finalMaterial} ${finalGrade}` });
 
     // Check SKU duplicate
     const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
@@ -130,39 +160,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `SKU "${finalSku}" sudah digunakan oleh produk lain` }, { status: 400 });
     }
 
-    // Check spec combination duplicate
-    const existingSpec = await prisma.product.findFirst({
-      where: {
-        category,
-        itemType,
-        metric: metric || '-',
-        length: length || '-',
-        material: material || 'Baja Karbon',
-        grade: grade || '8.8',
-        finishing: finishing || 'Zinc',
-      },
-    });
-
-    if (existingSpec) {
-      return NextResponse.json(
-        { error: `Produk dengan spesifikasi persis yang sama sudah ada: (${existingSpec.sku} - ${existingSpec.name})` },
-        { status: 400 }
-      );
-    }
-
-    const autoName = name || `${category} ${itemType} ${metric} ${length} ${material} ${grade} ${finishing}`.replace(/\s+/g, ' ').trim();
+    const autoName = name || `${rawItemType} ${finalMetric} ${length || ''} ${materialGrade || `${finalMaterial} ${finalGrade}`} ${finishing || ''}`.replace(/\s+/g, ' ').trim();
 
     const product = await prisma.product.create({
       data: {
         sku: finalSku,
         name: autoName,
         category,
-        itemType,
-        metric: metric || '-',
+        itemType: rawItemType,
+        metric: finalMetric,
         length: length || '-',
-        material: material || 'Baja Karbon',
-        grade: grade || '8.8',
-        finishing: finishing || 'Zinc',
+        material: finalMaterial,
+        grade: finalGrade,
+        finishing: finishing || 'Zinc Plating',
         unit: unit || 'Pcs',
         pcsPerBox: Number(pcsPerBox) || 100,
         warehouse: warehouse || 'Gudang Utama',

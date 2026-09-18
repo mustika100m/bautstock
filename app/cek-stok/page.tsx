@@ -27,21 +27,17 @@ export default function CekStokPage() {
   const [loading, setLoading] = useState(true);
 
   // Search Filters
-  const [searchMethod, setSearchMethod] = useState<'filter' | 'text' | 'barcode'>('filter');
+  const [searchMethod, setSearchMethod] = useState<'filter' | 'text'>('filter');
   const [searchText, setSearchText] = useState('');
-  const [barcodeInput, setBarcodeInput] = useState('');
 
-  // Cascading Filter state
-  const [category, setCategory] = useState('');
+  // 5 Spec Cascading Filter state
+  const [materialGrade, setMaterialGrade] = useState('');
+  const [thread, setThread] = useState('');
   const [itemType, setItemType] = useState('');
-  const [metric, setMetric] = useState('');
   const [length, setLength] = useState('');
-  const [material, setMaterial] = useState('');
-  const [grade, setGrade] = useState('');
   const [finishing, setFinishing] = useState('');
 
   // Modals
-  const [editModalProduct, setEditModalProduct] = useState<any | null>(null);
   const [addStockModalProduct, setAddStockModalProduct] = useState<any | null>(null);
   const [addStockQty, setAddStockQty] = useState(10);
   const [addStockNotes, setAddStockNotes] = useState('Quick Add Stock dari Cek Stok');
@@ -53,14 +49,11 @@ export default function CekStokPage() {
     try {
       const query = new URLSearchParams();
       if (searchMethod === 'text' && searchText) query.append('search', searchText);
-      if (searchMethod === 'barcode' && barcodeInput) query.append('barcode', barcodeInput);
       if (searchMethod === 'filter') {
-        if (category) query.append('category', category);
+        if (materialGrade) query.append('materialGrade', materialGrade);
+        if (thread) query.append('thread', thread);
         if (itemType) query.append('itemType', itemType);
-        if (metric) query.append('metric', metric);
         if (length) query.append('length', length);
-        if (material) query.append('material', material);
-        if (grade) query.append('grade', grade);
         if (finishing) query.append('finishing', finishing);
       }
 
@@ -77,18 +70,15 @@ export default function CekStokPage() {
 
   useEffect(() => {
     fetchProducts();
-  }, [category, itemType, metric, length, material, grade, finishing]);
+  }, [materialGrade, thread, itemType, length, finishing]);
 
   const handleResetFilters = () => {
-    setCategory('');
+    setMaterialGrade('');
+    setThread('');
     setItemType('');
-    setMetric('');
     setLength('');
-    setMaterial('');
-    setGrade('');
     setFinishing('');
     setSearchText('');
-    setBarcodeInput('');
     fetchProducts();
   };
 
@@ -148,7 +138,7 @@ export default function CekStokPage() {
             <span>Cek Stok & Spesifikasi Baut</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Pencarian cepat barang berdasarkan kombinasi spesifikasi, barcode scanner, atau teks.
+            Pencarian cepat barang berdasarkan 5 dropdown spesifikasi atau pencarian teks.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -173,7 +163,7 @@ export default function CekStokPage() {
           }`}
         >
           <Filter className="w-4 h-4" />
-          <span>1. Dropdown Filter Spesifikasi</span>
+          <span>1. Dropdown Filter 5 Spesifikasi</span>
         </button>
 
         <button
@@ -189,34 +179,49 @@ export default function CekStokPage() {
         </button>
       </div>
 
-      {/* Method 1: Cascading Dropdowns */}
+      {/* Method 1: 5 Spec Dropdowns */}
       {searchMethod === 'filter' && (
         <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h3 className="text-sm font-extrabold text-amber-400 flex items-center gap-2">
               <Filter className="w-4 h-4" />
-              <span>Filter Spesifikasi Bertingkat</span>
+              <span>Filter Spesifikasi Bertingkat (5 Menu)</span>
             </h3>
-            <span className="text-xs text-slate-400">Pilih atribut untuk menyaring ukuran</span>
+            <span className="text-xs text-slate-400">Pilih atribut spesifikasi untuk menyaring barang</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            {/* Kategori */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+            {/* Material/Grade */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Kategori</label>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Material/Grade</label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                value={materialGrade}
+                onChange={(e) => setMaterialGrade(e.target.value)}
                 className="w-full bg-slate-800 text-xs font-bold text-white p-2.5 rounded-xl border border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none"
               >
-                <option value="">-- Semua Kategori --</option>
-                {specs.categories?.map((c: string) => (
-                  <option key={c} value={c}>{c}</option>
+                <option value="">-- Semua Material/Grade --</option>
+                {specs.materialGrades?.map((mg: string) => (
+                  <option key={mg} value={mg}>{mg}</option>
                 ))}
               </select>
             </div>
 
-            {/* Jenis */}
+            {/* Thread */}
+            <div>
+              <label className="block text-[11px] font-bold text-amber-400 uppercase mb-1">Thread</label>
+              <select
+                value={thread}
+                onChange={(e) => setThread(e.target.value)}
+                className="w-full bg-slate-800 text-xs font-bold text-amber-300 p-2.5 rounded-xl border border-amber-500/40 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              >
+                <option value="">-- Semua Thread (M4, M8, UNC, dll) --</option>
+                {specs.threads?.map((th: string) => (
+                  <option key={th} value={th}>{th}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Jenis Barang */}
             <div>
               <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Jenis Barang</label>
               <select
@@ -224,31 +229,16 @@ export default function CekStokPage() {
                 onChange={(e) => setItemType(e.target.value)}
                 className="w-full bg-slate-800 text-xs font-bold text-white p-2.5 rounded-xl border border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none"
               >
-                <option value="">-- Semua Jenis --</option>
+                <option value="">-- Semua Jenis Barang --</option>
                 {specs.itemTypes?.map((t: string) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>
 
-            {/* Metric / Diameter */}
-            <div>
-              <label className="block text-[11px] font-bold text-amber-400 uppercase mb-1">Metric (Diameter)</label>
-              <select
-                value={metric}
-                onChange={(e) => setMetric(e.target.value)}
-                className="w-full bg-slate-800 text-xs font-bold text-amber-300 p-2.5 rounded-xl border border-amber-500/40 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              >
-                <option value="">-- Semua Metric (M4, M8, M10, dll) --</option>
-                {specs.metrics?.map((m: string) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
             {/* Panjang */}
             <div>
-              <label className="block text-[11px] font-bold text-amber-400 uppercase mb-1">Panjang (mm)</label>
+              <label className="block text-[11px] font-bold text-amber-400 uppercase mb-1">Panjang</label>
               <select
                 value={length}
                 onChange={(e) => setLength(e.target.value)}
@@ -257,36 +247,6 @@ export default function CekStokPage() {
                 <option value="">-- Semua Panjang --</option>
                 {specs.lengths?.map((l: string) => (
                   <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Material */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Material</label>
-              <select
-                value={material}
-                onChange={(e) => setMaterial(e.target.value)}
-                className="w-full bg-slate-800 text-xs font-bold text-white p-2.5 rounded-xl border border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none"
-              >
-                <option value="">-- Semua Material --</option>
-                {specs.materials?.map((mat: string) => (
-                  <option key={mat} value={mat}>{mat}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Grade */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Grade / Kelas</label>
-              <select
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="w-full bg-slate-800 text-xs font-bold text-white p-2.5 rounded-xl border border-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none"
-              >
-                <option value="">-- Semua Grade --</option>
-                {specs.grades?.map((g: string) => (
-                  <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </div>
@@ -316,7 +276,7 @@ export default function CekStokPage() {
             <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Cari kata kunci nama baut, SKU (BT-HB-M8-100), atau spesifikasi..."
+              placeholder="Cari kata kunci nama baut, SKU (BT-HEX-M8-50M-8.8), atau spesifikasi..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchProducts()}
@@ -331,8 +291,6 @@ export default function CekStokPage() {
           </button>
         </div>
       )}
-
-
 
       {/* Product Results Grid */}
       <div className="space-y-4">
@@ -352,6 +310,8 @@ export default function CekStokPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {products.map((prod) => {
               const statusInfo = getStockStatus(prod.stock, prod.minStock);
+              const matGradeText = prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim();
+              const threadText = prod.thread || prod.metric || '-';
 
               return (
                 <div
@@ -363,16 +323,11 @@ export default function CekStokPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="px-2 py-0.5 text-[10px] font-extrabold rounded bg-slate-100 text-slate-700 border border-slate-200">
-                          {prod.category}
+                          {matGradeText}
                         </span>
                         <span className="px-2 py-0.5 text-[10px] font-extrabold rounded bg-sky-50 text-sky-700 border border-sky-200">
                           {prod.itemType}
                         </span>
-                        {prod.barcode && (
-                          <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                            <Barcode className="w-3 h-3" /> {prod.barcode}
-                          </span>
-                        )}
                       </div>
                       <h3 className="text-base font-extrabold text-slate-800 leading-snug">{prod.name}</h3>
                       <p className="text-xs font-mono text-slate-500 mt-0.5">SKU: {prod.sku}</p>
@@ -399,7 +354,7 @@ export default function CekStokPage() {
                     <div>
                       <span className="text-slate-400 block text-[10px]">Ukuran / Specs:</span>
                       <span className="font-semibold text-slate-700">
-                        {prod.metric} x {prod.length} ({prod.material}, {prod.grade})
+                        {threadText} x {prod.length} ({matGradeText}, {prod.finishing})
                       </span>
                     </div>
                     <div>

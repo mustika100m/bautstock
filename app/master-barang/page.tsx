@@ -38,43 +38,26 @@ export default function MasterBarangPage() {
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
   // Dynamic spec option lists (defaults + existing database values)
-  const defaultCategories = ['Baut', 'Mur', 'Ring', 'Sekrup', 'Anchor', 'Pin & Clip', 'Klem', 'Stud Bolt', 'Fisher', 'Rivet'];
-  const allCategories = Array.from(new Set([...defaultCategories, ...products.map((p) => p.category).filter(Boolean)])).sort();
-
-  const defaultItemTypes = [
-    'Hex Bolt FT (Full Thread)',
-    'Hex Bolt HT (Half Thread)',
-    'L Bolt / Socket Cap FT (Full Thread)',
-    'L Bolt / Socket Cap HT (Half Thread)',
-    'Flange Bolt FT (Full Thread)',
-    'Flange Bolt HT (Half Thread)',
-    'Stud Bolt FT (Full Thread)',
-    'Stud Bolt HT (Half Thread)',
-    'Heavy Hex Bolt FT',
-    'Heavy Hex Bolt HT',
-    'Carriage Bolt FT',
-    'Carriage Bolt HT',
-    'Cap Screw FT',
-    'Cap Screw HT',
-    'Hex Bolt',
-    'L Bolt / Socket Cap',
-    'Flange Bolt',
-    'Nylon Lock Nut',
-    'Hex Nut',
-    'Wing Nut',
-    'Flat Washer',
-    'Spring Washer',
-    'Self Tapping Screw',
-    'Drywall Screw',
-    'Anchor Bolt',
-    'Stud Bolt',
-    'Roofing Screw',
-    'U-Bolt',
-    'Eye Bolt',
+  const defaultMaterialGrades = [
+    'Baja Karbon 4.8',
+    'Baja Karbon 8.8',
+    'Baja Karbon 10.9',
+    'Baja Karbon 12.9',
+    'Stainless Steel SS304 (A2-70)',
+    'Stainless Steel SS316 (A4-80)',
+    'Kuningan',
+    'Aluminum',
+    'Nylon',
+    'Besi S45C',
   ];
-  const allItemTypes = Array.from(new Set([...defaultItemTypes, ...products.map((p) => p.itemType).filter(Boolean)])).sort();
+  const allMaterialGrades = Array.from(
+    new Set([
+      ...defaultMaterialGrades,
+      ...products.map((p) => p.materialGrade || `${p.material || ''} ${p.grade || ''}`.trim()).filter(Boolean),
+    ])
+  ).sort();
 
-  const defaultMetrics = [
+  const defaultThreads = [
     // Metric (mm)
     'M2', 'M2.5', 'M3', 'M4', 'M5', 'M6', 'M8', 'M10', 'M12', 'M14', 'M16', 'M18', 'M20', 'M22', 'M24', 'M27', 'M30', 'M33', 'M36', 'M42', 'M48',
     // UNC (Coarse Inch)
@@ -84,7 +67,36 @@ export default function MasterBarangPage() {
     // BSW Inch
     'BSW 1/4"', 'BSW 5/16"', 'BSW 3/8"', 'BSW 1/2"', 'BSW 5/8"', 'BSW 3/4"', 'BSW 7/8"', 'BSW 1"',
   ];
-  const allMetrics = Array.from(new Set([...defaultMetrics, ...products.map((p) => p.metric).filter(Boolean)])).sort();
+  const allThreads = Array.from(
+    new Set([...defaultThreads, ...products.map((p) => p.thread || p.metric).filter(Boolean)])
+  ).sort();
+
+  const defaultItemTypes = [
+    'Baut Hex Bolt FT (Full Thread)',
+    'Baut Hex Bolt HT (Half Thread)',
+    'Baut L / Socket Cap FT',
+    'Baut L / Socket Cap HT',
+    'Baut Flange FT',
+    'Baut Flange HT',
+    'Baut Stud Bolt FT',
+    'Baut Stud Bolt HT',
+    'Baut Heavy Hex',
+    'Baut Carriage',
+    'Baut U-Bolt',
+    'Baut Eye Bolt',
+    'Mur Hex Nut',
+    'Mur Nylon Lock Nut',
+    'Mur Wing Nut',
+    'Ring Flat Washer',
+    'Ring Spring Washer',
+    'Sekrup Self Tapping Screw',
+    'Sekrup Drywall Screw',
+    'Sekrup Roofing',
+    'Anchor Bolt',
+    'Fisher',
+    'Rivet',
+  ];
+  const allItemTypes = Array.from(new Set([...defaultItemTypes, ...products.map((p) => p.itemType).filter(Boolean)])).sort();
 
   const defaultLengths = [
     // Millimeter (mm)
@@ -93,12 +105,6 @@ export default function MasterBarangPage() {
     '1/4"', '3/8"', '1/2"', '5/8"', '3/4"', '7/8"', '1"', '1-1/4"', '1-1/2"', '1-3/4"', '2"', '2-1/2"', '3"', '3-1/2"', '4"', '4-1/2"', '5"', '6"', '8"', '10"', '12"',
   ];
   const allLengths = Array.from(new Set([...defaultLengths, ...products.map((p) => p.length).filter(Boolean)])).sort();
-
-  const defaultMaterials = ['Baja Karbon', 'Stainless Steel 304', 'Stainless Steel 316', 'Kuningan', 'Aluminum', 'Nylon', 'Besi S45C'];
-  const allMaterials = Array.from(new Set([...defaultMaterials, ...products.map((p) => p.material).filter(Boolean)])).sort();
-
-  const defaultGrades = ['4.8', '8.8', '10.9', '12.9', 'A2-70', 'A4-80', 'Class 8', 'Class 10', 'SS 304', 'SS 316'];
-  const allGrades = Array.from(new Set([...defaultGrades, ...products.map((p) => p.grade).filter(Boolean)])).sort();
 
   const defaultFinishings = ['Zinc Plating', 'Black Oxide', 'Galvanized (HDG)', 'Polished', 'Yellow Zinc', 'Plain / Polos', 'Chrome'];
   const allFinishings = Array.from(new Set([...defaultFinishings, ...products.map((p) => p.finishing).filter(Boolean)])).sort();
@@ -115,22 +121,18 @@ export default function MasterBarangPage() {
     } catch (e) {}
   }, []);
 
-  const filteredCategories = allCategories.filter((opt) => !(hiddenOptions.category || []).includes(opt));
+  const filteredMaterialGrades = allMaterialGrades.filter((opt) => !(hiddenOptions.materialGrade || []).includes(opt));
+  const filteredThreads = allThreads.filter((opt) => !(hiddenOptions.thread || []).includes(opt));
   const filteredItemTypes = allItemTypes.filter((opt) => !(hiddenOptions.itemType || []).includes(opt));
-  const filteredMetrics = allMetrics.filter((opt) => !(hiddenOptions.metric || []).includes(opt));
   const filteredLengths = allLengths.filter((opt) => !(hiddenOptions.length || []).includes(opt));
-  const filteredMaterials = allMaterials.filter((opt) => !(hiddenOptions.material || []).includes(opt));
-  const filteredGrades = allGrades.filter((opt) => !(hiddenOptions.grade || []).includes(opt));
   const filteredFinishings = allFinishings.filter((opt) => !(hiddenOptions.finishing || []).includes(opt));
 
   // Custom typing toggles for each attribute
   const [customFields, setCustomFields] = useState<{ [key: string]: boolean }>({
-    category: false,
+    materialGrade: false,
+    thread: false,
     itemType: false,
-    metric: false,
     length: false,
-    material: false,
-    grade: false,
     finishing: false,
   });
 
@@ -144,16 +146,14 @@ export default function MasterBarangPage() {
   const [deletingProduct, setDeletingProduct] = useState<any | null>(null);
   const [deletingOption, setDeletingOption] = useState<{ fieldKey: string; optionValue: string; label: string } | null>(null);
 
-  // Form State
+  // Form State (5 main spec fields)
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
-    category: 'Baut',
-    itemType: 'Hex Bolt',
-    metric: 'M8',
-    length: '100 mm',
-    material: 'Baja Karbon',
-    grade: '8.8',
+    materialGrade: 'Baja Karbon 8.8',
+    thread: 'M8',
+    itemType: 'Baut Hex Bolt FT (Full Thread)',
+    length: '50 mm',
     finishing: 'Zinc Plating',
     unit: 'Pcs',
     pcsPerBox: 100,
@@ -188,12 +188,10 @@ export default function MasterBarangPage() {
 
   const resetCustomFields = () => {
     setCustomFields({
-      category: false,
+      materialGrade: false,
+      thread: false,
       itemType: false,
-      metric: false,
       length: false,
-      material: false,
-      grade: false,
       finishing: false,
     });
   };
@@ -281,12 +279,10 @@ export default function MasterBarangPage() {
     setFormData({
       sku: '',
       name: '',
-      category: 'Baut',
-      itemType: 'Hex Bolt FT (Full Thread)',
-      metric: 'M8',
+      materialGrade: 'Baja Karbon 8.8',
+      thread: 'M8',
+      itemType: 'Baut Hex Bolt FT (Full Thread)',
       length: '50 mm',
-      material: 'Baja Karbon',
-      grade: '8.8',
       finishing: 'Zinc Plating',
       unit: 'Pcs',
       pcsPerBox: 100,
@@ -310,25 +306,23 @@ export default function MasterBarangPage() {
     setFormData({
       sku: prod.sku,
       name: prod.name,
-      category: prod.category,
-      itemType: prod.itemType,
-      metric: prod.metric,
-      length: prod.length,
-      material: prod.material,
-      grade: prod.grade,
-      finishing: prod.finishing,
-      unit: prod.unit,
-      pcsPerBox: prod.pcsPerBox,
-      warehouse: prod.warehouse,
-      rackLocation: prod.rackLocation,
-      boxBin: prod.boxBin,
-      stock: prod.stock,
-      minStock: prod.minStock,
-      buyPrice: prod.buyPrice,
-      cashPrice: prod.cashPrice,
-      tempoPrice: prod.tempoPrice,
-      retailPrice: prod.retailPrice,
-      wholesalePrice: prod.wholesalePrice,
+      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'Baja Karbon 8.8',
+      thread: prod.thread || prod.metric || 'M8',
+      itemType: prod.itemType || 'Baut Hex Bolt',
+      length: prod.length || '50 mm',
+      finishing: prod.finishing || 'Zinc Plating',
+      unit: prod.unit || 'Pcs',
+      pcsPerBox: prod.pcsPerBox || 100,
+      warehouse: prod.warehouse || 'Gudang Utama',
+      rackLocation: prod.rackLocation || 'Rak A',
+      boxBin: prod.boxBin || 'A-01',
+      stock: prod.stock || 0,
+      minStock: prod.minStock || 10,
+      buyPrice: prod.buyPrice || 0,
+      cashPrice: prod.cashPrice || 0,
+      tempoPrice: prod.tempoPrice || 0,
+      retailPrice: prod.retailPrice || 0,
+      wholesalePrice: prod.wholesalePrice || 0,
     });
     setIsModalOpen(true);
   };
@@ -339,25 +333,23 @@ export default function MasterBarangPage() {
     setFormData({
       sku: '',
       name: prod.name || '',
-      category: prod.category,
-      itemType: prod.itemType,
-      metric: prod.metric,
-      length: prod.length,
-      material: prod.material,
-      grade: prod.grade,
-      finishing: prod.finishing,
-      unit: prod.unit,
-      pcsPerBox: prod.pcsPerBox,
-      warehouse: prod.warehouse,
-      rackLocation: prod.rackLocation,
-      boxBin: prod.boxBin,
-      stock: prod.stock,
-      minStock: prod.minStock,
-      buyPrice: prod.buyPrice,
-      cashPrice: prod.cashPrice,
-      tempoPrice: prod.tempoPrice,
-      retailPrice: prod.retailPrice,
-      wholesalePrice: prod.wholesalePrice,
+      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'Baja Karbon 8.8',
+      thread: prod.thread || prod.metric || 'M8',
+      itemType: prod.itemType || 'Baut Hex Bolt',
+      length: prod.length || '50 mm',
+      finishing: prod.finishing || 'Zinc Plating',
+      unit: prod.unit || 'Pcs',
+      pcsPerBox: prod.pcsPerBox || 100,
+      warehouse: prod.warehouse || 'Gudang Utama',
+      rackLocation: prod.rackLocation || 'Rak A',
+      boxBin: prod.boxBin || 'A-01',
+      stock: prod.stock || 0,
+      minStock: prod.minStock || 10,
+      buyPrice: prod.buyPrice || 0,
+      cashPrice: prod.cashPrice || 0,
+      tempoPrice: prod.tempoPrice || 0,
+      retailPrice: prod.retailPrice || 0,
+      wholesalePrice: prod.wholesalePrice || 0,
     });
     setIsModalOpen(true);
   };
@@ -368,9 +360,12 @@ export default function MasterBarangPage() {
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       const method = editingProduct ? 'PUT' : 'POST';
 
+      const autoName = `${formData.itemType} ${formData.thread} x ${formData.length} ${formData.materialGrade} ${formData.finishing}`.replace(/\s+/g, ' ').trim();
+
       const finalFormData = {
         ...formData,
         sku: formData.sku && formData.sku.trim() !== '' ? formData.sku.trim() : generateAutoSku(formData),
+        name: formData.name && formData.name.trim() !== '' ? formData.name.trim() : autoName,
       };
 
       const res = await fetch(url, {
@@ -386,8 +381,8 @@ export default function MasterBarangPage() {
 
       showToast(
         editingProduct
-          ? `Produk ${formData.name} berhasil diperbarui!`
-          : `Produk ${formData.name} berhasil ditambahkan!`,
+          ? `Produk ${finalFormData.name} berhasil diperbarui!`
+          : `Produk ${finalFormData.name} berhasil ditambahkan!`,
         'success'
       );
       setIsModalOpen(false);
@@ -486,7 +481,7 @@ export default function MasterBarangPage() {
             <span>Master Barang & Katalog Produk</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Kelola SKU, spesifikasi fastener, 4-tier pricing, lokasi gudang, & import Excel.
+            Kelola SKU, spesifikasi 5 dropdown, 4-tier pricing, lokasi gudang, & import Excel.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -512,7 +507,7 @@ export default function MasterBarangPage() {
         <Search className="w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder="Cari SKU, nama barang, atau kategori..."
+          placeholder="Cari SKU, nama barang, atau kata kunci spesifikasi..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 text-xs font-semibold focus:outline-none"
@@ -537,6 +532,8 @@ export default function MasterBarangPage() {
             <tbody className="divide-y divide-slate-100">
               {paginatedProducts.map((prod) => {
                 const statusInfo = getStockStatus(prod.stock, prod.minStock);
+                const matGradeText = prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim();
+                const threadText = prod.thread || prod.metric || '-';
 
                 return (
                   <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
@@ -546,7 +543,7 @@ export default function MasterBarangPage() {
                     <td className="py-3 px-4 max-w-xs">
                       <div className="font-bold text-slate-800">{prod.name}</div>
                       <div className="text-[10px] text-slate-500">
-                        {prod.category} | {prod.itemType} | {prod.metric} x {prod.length} | {prod.material}
+                        {matGradeText} | {threadText} | {prod.itemType} | {prod.length} | {prod.finishing}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-slate-600">
@@ -641,13 +638,12 @@ export default function MasterBarangPage() {
                 )}
               </div>
 
-              {renderSpecField('category', 'Kategori', filteredCategories, 'Ketik kategori baru (misal: Klem, Stud Bolt, Fisher)...')}
-              {renderSpecField('itemType', 'Jenis Barang', filteredItemTypes, 'Ketik jenis barang baru (misal: Hex Bolt, Lock Nut)...')}
-              {renderSpecField('metric', 'Metric (Diameter)', filteredMetrics, 'Ketik diameter metric baru (misal: M8, M10, 1/2")...')}
-              {renderSpecField('length', 'Panjang (mm / size)', filteredLengths, 'Ketik panjang baru (misal: 50 mm, 100 mm)...')}
-              {renderSpecField('material', 'Material / Bahan', filteredMaterials, 'Ketik material baru (misal: Stainless Steel 304)...')}
-              {renderSpecField('grade', 'Grade / Kelas', filteredGrades, 'Ketik grade/kelas baru (misal: 8.8, 10.9, A2-70)...')}
-              {renderSpecField('finishing', 'Finishing / Lapisan', filteredFinishings, 'Ketik finishing baru (misal: Zinc Plating, Black Oxide)...')}
+              {/* 5 Specification Dropdown Menus */}
+              {renderSpecField('materialGrade', 'Material/Grade', filteredMaterialGrades, 'Ketik Material/Grade baru (misal: Baja Karbon 8.8)...')}
+              {renderSpecField('thread', 'Thread', filteredThreads, 'Ketik Thread baru (misal: M8, 1/4" UNC)...')}
+              {renderSpecField('itemType', 'Jenis Barang', filteredItemTypes, 'Ketik Jenis Barang baru (misal: Baut Hex Bolt FT)...')}
+              {renderSpecField('length', 'Panjang', filteredLengths, 'Ketik Panjang baru (misal: 50 mm, 100 mm)...')}
+              {renderSpecField('finishing', 'Finishing', filteredFinishings, 'Ketik Finishing baru (misal: Zinc Plating, Black Oxide)...')}
             </div>
 
             {/* Nama Produk Auto */}
@@ -660,6 +656,11 @@ export default function MasterBarangPage() {
                 placeholder="Kosongkan jika ingin digenerate otomatis dari spesifikasi"
                 className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"
               />
+              {!formData.name && (
+                <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
+                  💡 Auto Nama: <span className="font-bold text-slate-700">{`${formData.itemType} ${formData.thread} x ${formData.length} ${formData.materialGrade} ${formData.finishing}`.replace(/\s+/g, ' ').trim()}</span>
+                </p>
+              )}
             </div>
 
             {/* Stok & Lokasi */}
@@ -790,7 +791,7 @@ export default function MasterBarangPage() {
               <UploadCloud className="w-10 h-10 text-sky-500 mx-auto mb-2" />
               <p className="font-bold text-slate-700">Upload File Spreadsheet (.xlsx / .csv)</p>
               <p className="text-[11px] text-slate-400 mt-1 mb-3">
-                Kolom Excel: SKU, Kategori, Jenis, Metric, Panjang, Material, Grade, Finishing, Satuan, Stok, Harga Beli, Harga Cash, Harga Tempo, Harga Retail, Harga Grosir, Lokasi.
+                Kolom Excel: SKU, Material/Grade, Thread, Jenis Barang, Panjang, Finishing, Satuan, Stok, Harga Beli, Harga Cash, Harga Tempo, Harga Retail, Harga Grosir, Lokasi.
               </p>
               <input
                 type="file"
@@ -893,12 +894,10 @@ export default function MasterBarangPage() {
             });
 
             const remainingOptions = (
-              fieldKey === 'category' ? allCategories :
+              fieldKey === 'materialGrade' ? allMaterialGrades :
+              fieldKey === 'thread' ? allThreads :
               fieldKey === 'itemType' ? allItemTypes :
-              fieldKey === 'metric' ? allMetrics :
               fieldKey === 'length' ? allLengths :
-              fieldKey === 'material' ? allMaterials :
-              fieldKey === 'grade' ? allGrades :
               fieldKey === 'finishing' ? allFinishings : []
             ).filter((opt) => opt !== optionValue && !(hiddenOptions[fieldKey] || []).includes(opt));
 
