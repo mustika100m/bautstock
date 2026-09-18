@@ -103,6 +103,26 @@ export default function MasterBarangPage() {
   const defaultFinishings = ['Zinc Plating', 'Black Oxide', 'Galvanized (HDG)', 'Polished', 'Yellow Zinc', 'Plain / Polos', 'Chrome'];
   const allFinishings = Array.from(new Set([...defaultFinishings, ...products.map((p) => p.finishing).filter(Boolean)])).sort();
 
+  // Hidden/removed options state (persisted in localStorage)
+  const [hiddenOptions, setHiddenOptions] = useState<{ [key: string]: string[] }>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bautstock_hidden_spec_options');
+      if (saved) {
+        setHiddenOptions(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }, []);
+
+  const filteredCategories = allCategories.filter((opt) => !(hiddenOptions.category || []).includes(opt));
+  const filteredItemTypes = allItemTypes.filter((opt) => !(hiddenOptions.itemType || []).includes(opt));
+  const filteredMetrics = allMetrics.filter((opt) => !(hiddenOptions.metric || []).includes(opt));
+  const filteredLengths = allLengths.filter((opt) => !(hiddenOptions.length || []).includes(opt));
+  const filteredMaterials = allMaterials.filter((opt) => !(hiddenOptions.material || []).includes(opt));
+  const filteredGrades = allGrades.filter((opt) => !(hiddenOptions.grade || []).includes(opt));
+  const filteredFinishings = allFinishings.filter((opt) => !(hiddenOptions.finishing || []).includes(opt));
+
   // Custom typing toggles for each attribute
   const [customFields, setCustomFields] = useState<{ [key: string]: boolean }>({
     category: false,
@@ -120,8 +140,9 @@ export default function MasterBarangPage() {
   const [importRawRows, setImportRawRows] = useState<any[]>([]);
   const [isImporting, setIsImporting] = useState(false);
 
-  // Confirm Delete Dialog
+  // Confirm Delete Dialogs
   const [deletingProduct, setDeletingProduct] = useState<any | null>(null);
+  const [deletingOption, setDeletingOption] = useState<{ fieldKey: string; optionValue: string; label: string } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -184,34 +205,51 @@ export default function MasterBarangPage() {
     placeholderText: string
   ) => {
     const isCustom = customFields[fieldKey];
+    const currentValue = (formData as any)[fieldKey];
+
     return (
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="block font-bold text-slate-700 text-xs">{label}</label>
-          <button
-            type="button"
-            onClick={() => setCustomFields((prev) => ({ ...prev, [fieldKey]: !isCustom }))}
-            className="text-[10px] font-bold text-sky-600 hover:text-sky-700 hover:underline"
-          >
-            {isCustom ? '← Pilih Dropdown' : '+ Ketik Baru'}
-          </button>
+          <div className="flex items-center gap-2">
+            {!isCustom && currentValue && (
+              <button
+                type="button"
+                onClick={() => setDeletingOption({ fieldKey, optionValue: currentValue, label })}
+                title={`Hapus "${currentValue}" dari daftar ${label}`}
+                className="text-[10px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-0.5 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Hapus Opsi</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCustomFields((prev) => ({ ...prev, [fieldKey]: !isCustom }))}
+              className="text-[10px] font-bold text-sky-600 hover:text-sky-700 hover:underline"
+            >
+              {isCustom ? '← Pilih Dropdown' : '+ Ketik Baru'}
+            </button>
+          </div>
         </div>
         {isCustom ? (
           <input
             type="text"
             placeholder={placeholderText}
-            value={(formData as any)[fieldKey]}
+            value={currentValue}
             onChange={(e) => setFormData({ ...formData, [fieldKey]: e.target.value })}
             className="w-full p-2.5 rounded-xl border border-sky-400 font-bold bg-sky-50/50 text-slate-900 focus:ring-2 focus:ring-sky-500 focus:outline-none text-xs"
             required
           />
         ) : (
           <select
-            value={(formData as any)[fieldKey]}
+            value={currentValue}
             onChange={(e) => {
               if (e.target.value === '__NEW__') {
                 setCustomFields((prev) => ({ ...prev, [fieldKey]: true }));
                 setFormData({ ...formData, [fieldKey]: '' });
+              } else if (e.target.value === '__DELETE__') {
+                setDeletingOption({ fieldKey, optionValue: currentValue, label });
               } else {
                 setFormData({ ...formData, [fieldKey]: e.target.value });
               }
@@ -226,6 +264,11 @@ export default function MasterBarangPage() {
             <option value="__NEW__" className="font-bold text-sky-600">
               + Tambah {label} Baru...
             </option>
+            {currentValue && (
+              <option value="__DELETE__" className="font-bold text-rose-600">
+                🗑️ Hapus Opsi Terpilih ({currentValue})...
+              </option>
+            )}
           </select>
         )}
       </div>
@@ -598,13 +641,13 @@ export default function MasterBarangPage() {
                 )}
               </div>
 
-              {renderSpecField('category', 'Kategori', allCategories, 'Ketik kategori baru (misal: Klem, Stud Bolt, Fisher)...')}
-              {renderSpecField('itemType', 'Jenis Barang', allItemTypes, 'Ketik jenis barang baru (misal: Hex Bolt, Lock Nut)...')}
-              {renderSpecField('metric', 'Metric (Diameter)', allMetrics, 'Ketik diameter metric baru (misal: M8, M10, 1/2")...')}
-              {renderSpecField('length', 'Panjang (mm / size)', allLengths, 'Ketik panjang baru (misal: 50 mm, 100 mm)...')}
-              {renderSpecField('material', 'Material / Bahan', allMaterials, 'Ketik material baru (misal: Stainless Steel 304)...')}
-              {renderSpecField('grade', 'Grade / Kelas', allGrades, 'Ketik grade/kelas baru (misal: 8.8, 10.9, A2-70)...')}
-              {renderSpecField('finishing', 'Finishing / Lapisan', allFinishings, 'Ketik finishing baru (misal: Zinc Plating, Black Oxide)...')}
+              {renderSpecField('category', 'Kategori', filteredCategories, 'Ketik kategori baru (misal: Klem, Stud Bolt, Fisher)...')}
+              {renderSpecField('itemType', 'Jenis Barang', filteredItemTypes, 'Ketik jenis barang baru (misal: Hex Bolt, Lock Nut)...')}
+              {renderSpecField('metric', 'Metric (Diameter)', filteredMetrics, 'Ketik diameter metric baru (misal: M8, M10, 1/2")...')}
+              {renderSpecField('length', 'Panjang (mm / size)', filteredLengths, 'Ketik panjang baru (misal: 50 mm, 100 mm)...')}
+              {renderSpecField('material', 'Material / Bahan', filteredMaterials, 'Ketik material baru (misal: Stainless Steel 304)...')}
+              {renderSpecField('grade', 'Grade / Kelas', filteredGrades, 'Ketik grade/kelas baru (misal: 8.8, 10.9, A2-70)...')}
+              {renderSpecField('finishing', 'Finishing / Lapisan', filteredFinishings, 'Ketik finishing baru (misal: Zinc Plating, Black Oxide)...')}
             </div>
 
             {/* Nama Produk Auto */}
@@ -827,6 +870,48 @@ export default function MasterBarangPage() {
           onConfirm={handleDeleteProduct}
           title="Nonaktifkan Produk"
           message={`Apakah Anda yakin ingin menonaktifkan produk ${deletingProduct.name} (${deletingProduct.sku})?`}
+          isDangerous={true}
+        />
+      )}
+
+      {/* Delete Option Confirmation */}
+      {deletingOption && (
+        <ConfirmDialog
+          isOpen={!!deletingOption}
+          onClose={() => setDeletingOption(null)}
+          onConfirm={() => {
+            const { fieldKey, optionValue, label } = deletingOption;
+            setHiddenOptions((prev) => {
+              const currentList = prev[fieldKey] || [];
+              if (currentList.includes(optionValue)) return prev;
+              const updatedList = [...currentList, optionValue];
+              const updated = { ...prev, [fieldKey]: updatedList };
+              try {
+                localStorage.setItem('bautstock_hidden_spec_options', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+
+            const remainingOptions = (
+              fieldKey === 'category' ? allCategories :
+              fieldKey === 'itemType' ? allItemTypes :
+              fieldKey === 'metric' ? allMetrics :
+              fieldKey === 'length' ? allLengths :
+              fieldKey === 'material' ? allMaterials :
+              fieldKey === 'grade' ? allGrades :
+              fieldKey === 'finishing' ? allFinishings : []
+            ).filter((opt) => opt !== optionValue && !(hiddenOptions[fieldKey] || []).includes(opt));
+
+            setFormData((prev) => ({
+              ...prev,
+              [fieldKey]: remainingOptions[0] || '',
+            }));
+
+            showToast(`Opsi "${optionValue}" berhasil dihapus dari daftar ${label}`, 'success');
+            setDeletingOption(null);
+          }}
+          title={`Hapus Opsi ${deletingOption.label}`}
+          message={`Apakah Anda yakin ingin menghapus opsi "${deletingOption.optionValue}" dari daftar dropdown ${deletingOption.label}?`}
           isDangerous={true}
         />
       )}
