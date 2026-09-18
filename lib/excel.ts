@@ -52,11 +52,16 @@ function getVal(row: any, ...keys: string[]): string {
   return '';
 }
 
-export function validateProductImport(rawRows: any[], existingSkus: Set<string>): ImportValidationResult {
+export function validateProductImport(
+  rawRows: any[],
+  existingSkus: Set<string>,
+  existingSpecs: Set<string> = new Set()
+): ImportValidationResult {
   const validRows: ImportedRow[] = [];
   const duplicateRows: { rowNumber: number; sku: string; reason: string }[] = [];
   const errorRows: ImportError[] = [];
   const seenSkusInFile = new Set<string>();
+  const seenSpecsInFile = new Set<string>();
 
   rawRows.forEach((row, index) => {
     const rowNum = index + 2; // header is row 1
@@ -83,6 +88,14 @@ export function validateProductImport(rawRows: any[], existingSkus: Set<string>)
       errorRows.push({ rowNumber: rowNum, sku: sku || '-', reason: 'Spesifikasi produk (Jenis Barang / Material) tidak boleh kosong' });
       return;
     }
+
+    const specKey = `${category}|${itemType}|${thread || 'FT'}|${length || '-'}|${materialGrade || 'GR 4.6'}|-|${finishing || 'HTM'}`.toLowerCase();
+
+    if (seenSpecsInFile.has(specKey)) {
+      duplicateRows.push({ rowNumber: rowNum, sku: sku || '-', reason: 'Spesifikasi produk duplikat dalam file Excel' });
+      return;
+    }
+    seenSpecsInFile.add(specKey);
 
     if (!sku) {
       let baseSku = generateAutoSku({ category, itemType, thread, length, materialGrade, finishing });
