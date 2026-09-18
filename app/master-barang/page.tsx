@@ -37,77 +37,92 @@ export default function MasterBarangPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
-  // Dynamic spec option lists (defaults + existing database values)
+  // User Preset 5 Spec Lists
   const defaultMaterialGrades = [
-    'Baja Karbon 4.8',
-    'Baja Karbon 8.8',
-    'Baja Karbon 10.9',
-    'Baja Karbon 12.9',
-    'Stainless Steel SS304 (A2-70)',
-    'Stainless Steel SS316 (A4-80)',
-    'Kuningan',
-    'Aluminum',
-    'Nylon',
-    'Besi S45C',
+    'GR 4.6',
+    'GR 8.8',
+    'SUS 304',
+    'SUS 316',
   ];
   const allMaterialGrades = Array.from(
     new Set([
       ...defaultMaterialGrades,
       ...products.map((p) => p.materialGrade || `${p.material || ''} ${p.grade || ''}`.trim()).filter(Boolean),
     ])
-  ).sort();
+  );
 
   const defaultThreads = [
-    // Metric (mm)
-    'M2', 'M2.5', 'M3', 'M4', 'M5', 'M6', 'M8', 'M10', 'M12', 'M14', 'M16', 'M18', 'M20', 'M22', 'M24', 'M27', 'M30', 'M33', 'M36', 'M42', 'M48',
-    // UNC (Coarse Inch)
-    '1/4" UNC', '5/16" UNC', '3/8" UNC', '7/16" UNC', '1/2" UNC', '9/16" UNC', '5/8" UNC', '3/4" UNC', '7/8" UNC', '1" UNC', '1-1/8" UNC', '1-1/4" UNC', '1-1/2" UNC',
-    // UNF (Fine Inch)
-    '1/4" UNF', '5/16" UNF', '3/8" UNF', '7/16" UNF', '1/2" UNF', '9/16" UNF', '5/8" UNF', '3/4" UNF', '7/8" UNF', '1" UNF', '1-1/8" UNF', '1-1/4" UNF', '1-1/2" UNF',
-    // BSW Inch
-    'BSW 1/4"', 'BSW 5/16"', 'BSW 3/8"', 'BSW 1/2"', 'BSW 5/8"', 'BSW 3/4"', 'BSW 7/8"', 'BSW 1"',
+    'FT',
+    'HT',
   ];
   const allThreads = Array.from(
     new Set([...defaultThreads, ...products.map((p) => p.thread || p.metric).filter(Boolean)])
-  ).sort();
+  );
 
   const defaultItemTypes = [
-    'Baut Hex Bolt FT (Full Thread)',
-    'Baut Hex Bolt HT (Half Thread)',
-    'Baut L / Socket Cap FT',
-    'Baut L / Socket Cap HT',
-    'Baut Flange FT',
-    'Baut Flange HT',
-    'Baut Stud Bolt FT',
-    'Baut Stud Bolt HT',
-    'Baut Heavy Hex',
-    'Baut Carriage',
-    'Baut U-Bolt',
-    'Baut Eye Bolt',
-    'Mur Hex Nut',
-    'Mur Nylon Lock Nut',
-    'Mur Wing Nut',
-    'Ring Flat Washer',
-    'Ring Spring Washer',
-    'Sekrup Self Tapping Screw',
-    'Sekrup Drywall Screw',
-    'Sekrup Roofing',
-    'Anchor Bolt',
-    'Fisher',
-    'Rivet',
+    'Baut Mur Hex M.5-P0.80-K8',
+    'Baut Mur Hex M.6-P1.00-K10',
+    'Baut Mur Hex M.8-P1.25-K13',
+    'Baut Mur Hex M.10-P1.50-K17',
+    'Baut Mur Hex M.12-P1.75-K19',
+    'Baut Mur Hex M.14-P2.00-K22',
+    'Baut Mur Hex M.16-P2.00-K24',
+    'Baut Mur Hex M.18-P2.50-K27',
+    'Baut Mur Hex M.20-P2.50-K30',
+    'Baut Mur Hex M.22-P2.50-K32',
+    'Baut Mur Hex M.24-P3.00-K36',
+    'Baut Mur Hex M.27-P3.00-K41',
+    'Baut Mur Hex M.30-P3.50-K46',
+    'Baut Mur Hex M.33-P3.50-K50',
+    'Baut Mur Hex M.36-P4.00-K55',
+    'Baut Mur Hex M.42-P4.50-K55',
   ];
-  const allItemTypes = Array.from(new Set([...defaultItemTypes, ...products.map((p) => p.itemType).filter(Boolean)])).sort();
+  const allItemTypes = Array.from(new Set([...defaultItemTypes, ...products.map((p) => p.itemType).filter(Boolean)]));
 
   const defaultLengths = [
-    // Millimeter (mm)
-    '5 mm', '8 mm', '10 mm', '12 mm', '15 mm', '20 mm', '25 mm', '30 mm', '35 mm', '40 mm', '45 mm', '50 mm', '60 mm', '70 mm', '80 mm', '90 mm', '100 mm', '120 mm', '150 mm', '200 mm',
-    // Inch (")
-    '1/4"', '3/8"', '1/2"', '5/8"', '3/4"', '7/8"', '1"', '1-1/4"', '1-1/2"', '1-3/4"', '2"', '2-1/2"', '3"', '3-1/2"', '4"', '4-1/2"', '5"', '6"', '8"', '10"', '12"',
+    '8 MM',
+    '10 MM',
+    '12 MM',
+    '16 MM',
+    '20 MM',
+    '25 MM',
+    '30 MM',
+    '35 MM',
+    '40 MM',
+    '45 MM',
+    '50 MM',
+    '55 MM',
+    '60 MM',
+    '65 MM',
+    '70 MM',
+    '75 MM',
+    '80 MM',
+    '85 MM',
+    '90 MM',
+    '95 MM',
+    '100 MM',
+    '110 MM',
+    '120 MM',
+    '125 MM',
+    '130 MM',
+    '140 MM',
+    '150 MM',
+    '160 MM',
+    '170 MM',
+    '180 MM',
+    '190 MM',
+    '200 MM',
   ];
-  const allLengths = Array.from(new Set([...defaultLengths, ...products.map((p) => p.length).filter(Boolean)])).sort();
+  const allLengths = Array.from(new Set([...defaultLengths, ...products.map((p) => p.length).filter(Boolean)]));
 
-  const defaultFinishings = ['Zinc Plating', 'Black Oxide', 'Galvanized (HDG)', 'Polished', 'Yellow Zinc', 'Plain / Polos', 'Chrome'];
-  const allFinishings = Array.from(new Set([...defaultFinishings, ...products.map((p) => p.finishing).filter(Boolean)])).sort();
+  const defaultFinishings = [
+    'HTM',
+    'PTH',
+    'KNG',
+    'UCP',
+    'HDG',
+  ];
+  const allFinishings = Array.from(new Set([...defaultFinishings, ...products.map((p) => p.finishing).filter(Boolean)]));
 
   // Hidden/removed options state (persisted in localStorage)
   const [hiddenOptions, setHiddenOptions] = useState<{ [key: string]: string[] }>({});
@@ -150,11 +165,11 @@ export default function MasterBarangPage() {
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
-    materialGrade: 'Baja Karbon 8.8',
-    thread: 'M8',
-    itemType: 'Baut Hex Bolt FT (Full Thread)',
-    length: '50 mm',
-    finishing: 'Zinc Plating',
+    materialGrade: 'GR 4.6',
+    thread: 'FT',
+    itemType: 'Baut Mur Hex M.5-P0.80-K8',
+    length: '8 MM',
+    finishing: 'HTM',
     unit: 'Pcs',
     pcsPerBox: 100,
     warehouse: 'Gudang Utama',
@@ -279,11 +294,11 @@ export default function MasterBarangPage() {
     setFormData({
       sku: '',
       name: '',
-      materialGrade: 'Baja Karbon 8.8',
-      thread: 'M8',
-      itemType: 'Baut Hex Bolt FT (Full Thread)',
-      length: '50 mm',
-      finishing: 'Zinc Plating',
+      materialGrade: 'GR 4.6',
+      thread: 'FT',
+      itemType: 'Baut Mur Hex M.5-P0.80-K8',
+      length: '8 MM',
+      finishing: 'HTM',
       unit: 'Pcs',
       pcsPerBox: 100,
       warehouse: 'Gudang Utama',
@@ -306,11 +321,11 @@ export default function MasterBarangPage() {
     setFormData({
       sku: prod.sku,
       name: prod.name,
-      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'Baja Karbon 8.8',
-      thread: prod.thread || prod.metric || 'M8',
-      itemType: prod.itemType || 'Baut Hex Bolt',
-      length: prod.length || '50 mm',
-      finishing: prod.finishing || 'Zinc Plating',
+      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'GR 4.6',
+      thread: prod.thread || prod.metric || 'FT',
+      itemType: prod.itemType || 'Baut Mur Hex M.5-P0.80-K8',
+      length: prod.length || '8 MM',
+      finishing: prod.finishing || 'HTM',
       unit: prod.unit || 'Pcs',
       pcsPerBox: prod.pcsPerBox || 100,
       warehouse: prod.warehouse || 'Gudang Utama',
@@ -332,12 +347,12 @@ export default function MasterBarangPage() {
     resetCustomFields();
     setFormData({
       sku: '',
-      name: prod.name || '',
-      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'Baja Karbon 8.8',
-      thread: prod.thread || prod.metric || 'M8',
-      itemType: prod.itemType || 'Baut Hex Bolt',
-      length: prod.length || '50 mm',
-      finishing: prod.finishing || 'Zinc Plating',
+      name: '',
+      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'GR 4.6',
+      thread: prod.thread || prod.metric || 'FT',
+      itemType: prod.itemType || 'Baut Mur Hex M.5-P0.80-K8',
+      length: prod.length || '8 MM',
+      finishing: prod.finishing || 'HTM',
       unit: prod.unit || 'Pcs',
       pcsPerBox: prod.pcsPerBox || 100,
       warehouse: prod.warehouse || 'Gudang Utama',
@@ -360,7 +375,8 @@ export default function MasterBarangPage() {
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       const method = editingProduct ? 'PUT' : 'POST';
 
-      const autoName = `${formData.itemType} ${formData.thread} x ${formData.length} ${formData.materialGrade} ${formData.finishing}`.replace(/\s+/g, ' ').trim();
+      // Order: MATL THREAD JENIS_BARANG PANJANG FINISHING
+      const autoName = `${formData.materialGrade} ${formData.thread} ${formData.itemType} ${formData.length} ${formData.finishing}`.replace(/\s+/g, ' ').trim();
 
       const finalFormData = {
         ...formData,
@@ -638,12 +654,12 @@ export default function MasterBarangPage() {
                 )}
               </div>
 
-              {/* 5 Specification Dropdown Menus */}
-              {renderSpecField('materialGrade', 'Material/Grade', filteredMaterialGrades, 'Ketik Material/Grade baru (misal: Baja Karbon 8.8)...')}
-              {renderSpecField('thread', 'Thread', filteredThreads, 'Ketik Thread baru (misal: M8, 1/4" UNC)...')}
-              {renderSpecField('itemType', 'Jenis Barang', filteredItemTypes, 'Ketik Jenis Barang baru (misal: Baut Hex Bolt FT)...')}
-              {renderSpecField('length', 'Panjang', filteredLengths, 'Ketik Panjang baru (misal: 50 mm, 100 mm)...')}
-              {renderSpecField('finishing', 'Finishing', filteredFinishings, 'Ketik Finishing baru (misal: Zinc Plating, Black Oxide)...')}
+              {/* 5 Specification Dropdown Menus in exact order */}
+              {renderSpecField('materialGrade', 'Material/Grade', filteredMaterialGrades, 'Ketik Material/Grade baru (misal: GR 4.6, SUS 304)...')}
+              {renderSpecField('thread', 'Thread', filteredThreads, 'Ketik Thread baru (misal: FT, HT)...')}
+              {renderSpecField('itemType', 'Jenis Barang', filteredItemTypes, 'Ketik Jenis Barang baru (misal: Baut Mur Hex M.5-P0.80-K8)...')}
+              {renderSpecField('length', 'Panjang', filteredLengths, 'Ketik Panjang baru (misal: 8 MM, 50 MM)...')}
+              {renderSpecField('finishing', 'Finishing', filteredFinishings, 'Ketik Finishing baru (misal: HTM, HDG)...')}
             </div>
 
             {/* Nama Produk Auto */}
@@ -658,7 +674,7 @@ export default function MasterBarangPage() {
               />
               {!formData.name && (
                 <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
-                  💡 Auto Nama: <span className="font-bold text-slate-700">{`${formData.itemType} ${formData.thread} x ${formData.length} ${formData.materialGrade} ${formData.finishing}`.replace(/\s+/g, ' ').trim()}</span>
+                  💡 Auto Nama: <span className="font-bold text-slate-700">{`${formData.materialGrade} ${formData.thread} ${formData.itemType} ${formData.length} ${formData.finishing}`.replace(/\s+/g, ' ').trim()}</span>
                 </p>
               )}
             </div>

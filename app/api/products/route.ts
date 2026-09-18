@@ -126,8 +126,8 @@ export async function POST(req: NextRequest) {
       userName = 'Admin',
     } = body;
 
-    const finalMetric = thread || metric || 'M8';
-    const rawItemType = itemType || 'Hex Bolt';
+    const finalMetric = thread || metric || 'FT';
+    const rawItemType = itemType || 'Baut Mur Hex M.5-P0.80-K8';
     if (!category && rawItemType) {
       const firstWord = rawItemType.trim().split(/\s+/)[0];
       category = firstWord;
@@ -137,22 +137,16 @@ export async function POST(req: NextRequest) {
     let finalMaterial = material || '';
     let finalGrade = grade || '';
     if (materialGrade) {
-      const gradeMatch = materialGrade.match(/(12\.9|10\.9|8\.8|4\.8|316|304|A4-80|A2-70|Class 10|Class 8)/i);
-      if (gradeMatch) {
-        finalGrade = gradeMatch[1].toUpperCase();
-        finalMaterial = materialGrade.replace(gradeMatch[0], '').replace(/[()]/g, '').trim() || 'Baja Karbon';
-      } else {
-        finalMaterial = materialGrade;
-        finalGrade = '-';
-      }
+      finalMaterial = materialGrade;
+      finalGrade = '-';
     } else {
-      if (!finalMaterial) finalMaterial = 'Baja Karbon';
-      if (!finalGrade) finalGrade = '8.8';
+      if (!finalMaterial) finalMaterial = 'GR 4.6';
+      if (!finalGrade) finalGrade = '-';
     }
 
     const isAutoSku = !sku || sku.trim() === '';
     let finalSku = isAutoSku
-      ? generateAutoSku({ category, itemType: rawItemType, thread: finalMetric, length, materialGrade: materialGrade || `${finalMaterial} ${finalGrade}`, finishing })
+      ? generateAutoSku({ category, itemType: rawItemType, thread: finalMetric, length, materialGrade: materialGrade || `${finalMaterial} ${finalGrade}`.trim(), finishing })
       : sku.trim();
 
     if (isAutoSku) {
@@ -170,7 +164,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const autoName = name || `${rawItemType} ${finalMetric} ${length || ''} ${materialGrade || `${finalMaterial} ${finalGrade}`} ${finishing || ''}`.replace(/\s+/g, ' ').trim();
+    // Auto Name order: [MATL] [THREAD] [JENIS BARANG] [PANJANG] [FINISHING]
+    const matlText = materialGrade || `${finalMaterial} ${finalGrade}`.trim();
+    const autoName = name || `${matlText} ${finalMetric} ${rawItemType} ${length || ''} ${finishing || ''}`.replace(/\s+/g, ' ').trim();
 
     const product = await prisma.product.create({
       data: {
@@ -182,7 +178,7 @@ export async function POST(req: NextRequest) {
         length: length || '-',
         material: finalMaterial,
         grade: finalGrade,
-        finishing: finishing || 'Zinc Plating',
+        finishing: finishing || 'HTM',
         unit: unit || 'Pcs',
         pcsPerBox: Number(pcsPerBox) || 100,
         warehouse: warehouse || 'Gudang Utama',

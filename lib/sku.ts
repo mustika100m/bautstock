@@ -11,82 +11,32 @@ export interface ProductSpecInput {
 }
 
 export function generateAutoSku(spec: ProductSpecInput): string {
-  const catCodeMap: { [k: string]: string } = {
-    'Baut': 'BT',
-    'Mur': 'MR',
-    'Ring': 'RG',
-    'Sekrup': 'SK',
-    'Anchor': 'ANC',
-    'Pin & Clip': 'PIN',
-    'Klem': 'KLM',
-    'Stud Bolt': 'STB',
-    'Fisher': 'FSH',
-    'Rivet': 'RVT',
-  };
+  // 1. Material / Grade (e.g. GR 4.6 -> GR4.6, SUS 304 -> SUS304)
+  let rawMat = (spec.materialGrade || `${spec.material || ''} ${spec.grade || ''}`.trim() || 'GR 4.6').trim();
+  let matCode = rawMat.replace(/\s+/g, '').toUpperCase();
 
-  let category = spec.category || '';
-  let rawItemType = spec.itemType || '';
-  if (!category && rawItemType) {
-    const firstWord = rawItemType.trim().split(/\s+/)[0];
-    if (catCodeMap[firstWord]) {
-      category = firstWord;
-      rawItemType = rawItemType.replace(firstWord, '').trim();
-    }
-  }
-  if (!category) category = 'Baut';
+  // 2. Thread (e.g. FT, HT)
+  let rawThread = (spec.thread || spec.metric || 'FT').trim();
+  let threadCode = rawThread.replace(/\s+/g, '').toUpperCase();
 
-  const catCode = catCodeMap[category] || category.substring(0, 3).toUpperCase();
-
-  let itemType = (rawItemType || 'Hex Bolt').trim();
-  let itemCode = itemType
-    .replace(/\(.*?\)/g, '')
-    .trim()
-    .toUpperCase()
-    .replace(/SOCKET CAP/gi, 'L')
-    .replace(/NYLON LOCK NUT/gi, 'NYL-NUT')
-    .replace(/SELF TAPPING SCREW/gi, 'SDS')
-    .replace(/DRYWALL SCREW/gi, 'DWS')
-    .replace(/SPRING WASHER/gi, 'SP-RG')
-    .replace(/FLAT WASHER/gi, 'FL-RG')
-    .replace(/HEX BOLT/gi, 'HEX')
-    .replace(/FLANGE BOLT/gi, 'FLG')
-    .replace(/STUD BOLT/gi, 'STB')
-    .replace(/HEAVY HEX BOLT/gi, 'HHEX')
-    .replace(/CARRIAGE BOLT/gi, 'CRG')
-    .replace(/\s+/g, '-');
-
-  let metric = (spec.thread || spec.metric || 'M8').trim();
-  let metricCode = metric
-    .replace(/"/g, '')
-    .replace(/\s+/g, '')
+  // 3. Jenis Barang (e.g. Baut Mur Hex M.5-P0.80-K8 -> BMH-M.5-P0.80-K8)
+  let rawItemType = (spec.itemType || 'Baut Mur Hex M.5-P0.80-K8').trim();
+  let itemCode = rawItemType
+    .replace(/Baut Mur Hex/gi, 'BMH')
+    .replace(/Baut Hex/gi, 'BH')
+    .replace(/Mur Hex/gi, 'MH')
+    .replace(/\s+/g, '-')
     .toUpperCase();
 
-  let length = (spec.length || '50 mm').trim();
-  let lengthCode = length
-    .replace(/\s*mm/gi, 'M')
-    .replace(/"/gi, 'IN')
-    .replace(/\s+/g, '');
+  // 4. Panjang (e.g. 8 MM -> 8MM)
+  let rawLength = (spec.length || '8 MM').trim();
+  let lengthCode = rawLength.replace(/\s+/g, '').toUpperCase();
 
-  let rawMatGrade = spec.materialGrade || `${spec.material || ''} ${spec.grade || ''}`.trim() || '8.8';
-  let gradeCode = '8.8';
-  const gradeMatch = rawMatGrade.match(/(12\.9|10\.9|8\.8|4\.8|316|304|A4-80|A2-70|Class 10|Class 8)/i);
-  if (gradeMatch) {
-    gradeCode = gradeMatch[1].toUpperCase();
-  } else {
-    gradeCode = rawMatGrade.replace(/\s+/g, '').substring(0, 5).toUpperCase();
-  }
+  // 5. Finishing (e.g. HTM, PTH, KNG, UCP, HDG)
+  let rawFinishing = (spec.finishing || 'HTM').trim();
+  let finishingCode = rawFinishing.replace(/\s+/g, '').toUpperCase();
 
-  let finishingCode = '';
-  if (spec.finishing) {
-    const fin = spec.finishing.trim();
-    if (/galvaniz|hdg/i.test(fin)) finishingCode = 'HDG';
-    else if (/black|oxide/i.test(fin)) finishingCode = 'BLK';
-    else if (/yellow/i.test(fin)) finishingCode = 'YZP';
-    else if (/polish/i.test(fin)) finishingCode = 'POL';
-    else if (/chrome/i.test(fin)) finishingCode = 'CHR';
-    else if (/plain|polos/i.test(fin)) finishingCode = 'PLN';
-  }
-
-  const parts = [catCode, itemCode, metricCode, lengthCode, gradeCode, finishingCode].filter(Boolean);
+  // Exact order: MATL - THREAD - JENIS BARANG - PANJANG - FINISHING
+  const parts = [matCode, threadCode, itemCode, lengthCode, finishingCode].filter(Boolean);
   return parts.join('-');
 }
