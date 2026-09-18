@@ -150,14 +150,24 @@ export async function POST(req: NextRequest) {
       if (!finalGrade) finalGrade = '8.8';
     }
 
-    const finalSku = (sku && sku.trim() !== '')
-      ? sku.trim()
-      : generateAutoSku({ category, itemType: rawItemType, thread: finalMetric, length, materialGrade: materialGrade || `${finalMaterial} ${finalGrade}` });
+    const isAutoSku = !sku || sku.trim() === '';
+    let finalSku = isAutoSku
+      ? generateAutoSku({ category, itemType: rawItemType, thread: finalMetric, length, materialGrade: materialGrade || `${finalMaterial} ${finalGrade}`, finishing })
+      : sku.trim();
 
-    // Check SKU duplicate
-    const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
-    if (existingSku) {
-      return NextResponse.json({ error: `SKU "${finalSku}" sudah digunakan oleh produk lain` }, { status: 400 });
+    if (isAutoSku) {
+      let counter = 1;
+      let candidateSku = finalSku;
+      while (await prisma.product.findUnique({ where: { sku: candidateSku } })) {
+        counter++;
+        candidateSku = `${finalSku}-${counter}`;
+      }
+      finalSku = candidateSku;
+    } else {
+      const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
+      if (existingSku) {
+        return NextResponse.json({ error: `SKU "${finalSku}" sudah digunakan oleh produk lain` }, { status: 400 });
+      }
     }
 
     const autoName = name || `${rawItemType} ${finalMetric} ${length || ''} ${materialGrade || `${finalMaterial} ${finalGrade}`} ${finishing || ''}`.replace(/\s+/g, ' ').trim();

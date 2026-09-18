@@ -76,6 +76,17 @@ export function generateAutoSku(spec: ProductSpecInput): string {
     gradeCode = rawMatGrade.replace(/\s+/g, '').substring(0, 5).toUpperCase();
   }
 
-  const parts = [catCode, itemCode, metricCode, lengthCode, gradeCode].filter(Boolean);
+  let finishingCode = '';
+  if (spec.finishing) {
+    const fin = spec.finishing.trim();
+    if (/galvaniz|hdg/i.test(fin)) finishingCode = 'HDG';
+    else if (/black|oxide/i.test(fin)) finishingCode = 'BLK';
+    else if (/yellow/i.test(fin)) finishingCode = 'YZP';
+    else if (/polish/i.test(fin)) finishingCode = 'POL';
+    else if (/chrome/i.test(fin)) finishingCode = 'CHR';
+    else if (/plain|polos/i.test(fin)) finishingCode = 'PLN';
+  }
+
+  const parts = [catCode, itemCode, metricCode, lengthCode, gradeCode, finishingCode].filter(Boolean);
   return parts.join('-');
 }
