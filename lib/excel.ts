@@ -9,6 +9,7 @@ export interface ImportedRow {
   length: string;
   material: string;
   grade: string;
+  materialGrade?: string;
   finishing: string;
   unit: string;
   stock: number;
@@ -44,29 +45,31 @@ export function validateProductImport(rawRows: any[], existingSkus: Set<string>)
   rawRows.forEach((row, index) => {
     const rowNum = index + 2; // header is row 1
     let sku = String(row['SKU'] || row['sku'] || '').trim();
-    const category = String(row['Kategori'] || row['category'] || '').trim();
-    const itemType = String(row['Jenis'] || row['itemType'] || '').trim();
-    const metric = String(row['Metric'] || row['metric'] || '').trim();
+    const materialGrade = String(row['Material/Grade'] || row['Material'] || row['materialGrade'] || row['material'] || '').trim();
+    const thread = String(row['Thread'] || row['Metric'] || row['thread'] || row['metric'] || '').trim();
+    const itemType = String(row['Jenis Barang'] || row['Jenis'] || row['itemType'] || '').trim();
     const length = String(row['Panjang'] || row['length'] || '').trim();
-    const material = String(row['Material'] || row['material'] || '').trim();
-    const grade = String(row['Grade'] || row['grade'] || '').trim();
     const finishing = String(row['Finishing'] || row['finishing'] || '').trim();
     const unit = String(row['Satuan'] || row['unit'] || 'Pcs').trim();
     const stock = Number(row['Stok'] || row['stock'] || 0);
-    const buyPrice = Number(row['Harga Beli'] || row['buyPrice'] || 0);
-    const cashPrice = Number(row['Harga Cash'] || row['cashPrice'] || 0);
-    const tempoPrice = Number(row['Harga Tempo'] || row['tempoPrice'] || 0);
+    const buyPrice = Number(row['Harga Beli'] || row['Harga Beli (Modal)'] || row['buyPrice'] || 0);
     const retailPrice = Number(row['Harga Retail'] || row['retailPrice'] || 0);
     const wholesalePrice = Number(row['Harga Grosir'] || row['wholesalePrice'] || 0);
     const lokasi = String(row['Lokasi'] || row['location'] || '').trim();
 
-    if (!category) {
-      errorRows.push({ rowNumber: rowNum, sku: sku || '-', reason: 'Kategori tidak boleh kosong' });
+    let category = String(row['Kategori'] || row['category'] || '').trim();
+    if (!category && itemType) {
+      category = itemType.trim().split(/\s+/)[0] || 'Baut';
+    }
+    if (!category) category = 'Baut';
+
+    if (!itemType && !materialGrade) {
+      errorRows.push({ rowNumber: rowNum, sku: sku || '-', reason: 'Spesifikasi produk (Jenis Barang / Material) tidak boleh kosong' });
       return;
     }
 
     if (!sku) {
-      sku = generateAutoSku({ category, itemType, metric, length, material, grade, finishing });
+      sku = generateAutoSku({ category, itemType, thread, length, materialGrade, finishing });
     }
 
     if (seenSkusInFile.has(sku)) {
@@ -81,23 +84,25 @@ export function validateProductImport(rawRows: any[], existingSkus: Set<string>)
 
     seenSkusInFile.add(sku);
 
-    const name = `${category} ${itemType} ${metric} ${length} ${material} ${grade} ${finishing}`.replace(/\s+/g, ' ').trim();
+    // Auto Name order: [MATL] [THREAD] [JENIS BARANG] [PANJANG] [FINISHING]
+    const name = `${materialGrade || 'GR 4.6'} ${thread || 'FT'} ${itemType || 'Baut Mur Hex'} ${length || ''} ${finishing || ''}`.replace(/\s+/g, ' ').trim();
 
     validRows.push({
       sku,
       name,
       category,
-      itemType: itemType || 'Standard',
-      metric: metric || '-',
+      itemType: itemType || 'Baut Mur Hex',
+      metric: thread || 'FT',
       length: length || '-',
-      material: material || 'Baja Karbon',
-      grade: grade || '8.8',
-      finishing: finishing || 'Zinc',
+      material: materialGrade || 'GR 4.6',
+      grade: '-',
+      materialGrade,
+      finishing: finishing || 'HTM',
       unit,
       stock,
       buyPrice,
-      cashPrice,
-      tempoPrice,
+      cashPrice: retailPrice,
+      tempoPrice: wholesalePrice,
       retailPrice,
       wholesalePrice,
       warehouse: 'Gudang Utama',
