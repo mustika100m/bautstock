@@ -276,7 +276,7 @@ export default function CekStokPage() {
             <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Cari kata kunci nama baut, SKU (BT-HEX-M8-50M-8.8), atau spesifikasi..."
+              placeholder="Cari kata kunci nama baut, SKU (GR4.6-HT-BMH-M.5-8MM-HTM), atau spesifikasi..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchProducts()}
@@ -367,27 +367,19 @@ export default function CekStokPage() {
                     </div>
                   </div>
 
-                  {/* 4 Tier Pricing Grid */}
+                  {/* 2 Tier Pricing Grid */}
                   <div>
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                      4 Tier Harga Jual:
+                      Harga Jual (Retail & Grosir):
                     </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                      <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl">
-                        <span className="text-[10px] font-bold text-emerald-700 block">Harga Cash</span>
-                        <span className="font-extrabold text-emerald-800">{formatRupiah(prod.cashPrice)}</span>
-                      </div>
-                      <div className="p-2 bg-blue-50 border border-blue-200 rounded-xl">
-                        <span className="text-[10px] font-bold text-blue-700 block">Harga Tempo</span>
-                        <span className="font-extrabold text-blue-800">{formatRupiah(prod.tempoPrice)}</span>
-                      </div>
-                      <div className="p-2 bg-purple-50 border border-purple-200 rounded-xl">
+                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                      <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl">
                         <span className="text-[10px] font-bold text-purple-700 block">Harga Retail</span>
-                        <span className="font-extrabold text-purple-800">{formatRupiah(prod.retailPrice)}</span>
+                        <span className="font-extrabold text-purple-800 text-sm">{formatRupiah(prod.retailPrice)}</span>
                       </div>
-                      <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
                         <span className="text-[10px] font-bold text-amber-700 block">Harga Grosir</span>
-                        <span className="font-extrabold text-amber-800">{formatRupiah(prod.wholesalePrice)}</span>
+                        <span className="font-extrabold text-amber-800 text-sm">{formatRupiah(prod.wholesalePrice)}</span>
                       </div>
                     </div>
                   </div>

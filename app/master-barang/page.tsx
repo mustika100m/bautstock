@@ -497,7 +497,7 @@ export default function MasterBarangPage() {
             <span>Master Barang & Katalog Produk</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Kelola SKU, spesifikasi 5 dropdown, 4-tier pricing, lokasi gudang, & import Excel.
+            Kelola SKU, spesifikasi 5 dropdown, harga retail & grosir, lokasi gudang, & import Excel.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -719,35 +719,17 @@ export default function MasterBarangPage() {
               </div>
             </div>
 
-            {/* 4 Price Tiers & Buy Price */}
+            {/* 2 Price Tiers & Buy Price */}
             <div>
-              <span className="block font-bold text-slate-800 mb-2">Penetapan Harga (Modal & 4 Price Tiers):</span>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <span className="block font-bold text-slate-800 mb-2">Penetapan Harga (Modal, Retail & Grosir):</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 mb-1">Harga Beli (Modal)</label>
                   <input
                     type="number"
                     value={formData.buyPrice}
                     onChange={(e) => setFormData({ ...formData, buyPrice: Number(e.target.value) })}
-                    className="w-full p-2 rounded-lg border border-slate-200 font-bold text-slate-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-emerald-700 mb-1">Harga Cash</label>
-                  <input
-                    type="number"
-                    value={formData.cashPrice}
-                    onChange={(e) => setFormData({ ...formData, cashPrice: Number(e.target.value) })}
-                    className="w-full p-2 rounded-lg border border-emerald-300 font-bold text-emerald-800 bg-emerald-50/50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-blue-700 mb-1">Harga Tempo</label>
-                  <input
-                    type="number"
-                    value={formData.tempoPrice}
-                    onChange={(e) => setFormData({ ...formData, tempoPrice: Number(e.target.value) })}
-                    className="w-full p-2 rounded-lg border border-blue-300 font-bold text-blue-800 bg-blue-50/50"
+                    className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -756,7 +738,7 @@ export default function MasterBarangPage() {
                     type="number"
                     value={formData.retailPrice}
                     onChange={(e) => setFormData({ ...formData, retailPrice: Number(e.target.value) })}
-                    className="w-full p-2 rounded-lg border border-purple-300 font-bold text-purple-800 bg-purple-50/50"
+                    className="w-full p-2.5 rounded-xl border border-purple-300 font-bold text-purple-800 bg-purple-50/50 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -765,7 +747,7 @@ export default function MasterBarangPage() {
                     type="number"
                     value={formData.wholesalePrice}
                     onChange={(e) => setFormData({ ...formData, wholesalePrice: Number(e.target.value) })}
-                    className="w-full p-2 rounded-lg border border-amber-300 font-bold text-amber-800 bg-amber-50/50"
+                    className="w-full p-2.5 rounded-xl border border-amber-300 font-bold text-amber-800 bg-amber-50/50 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -807,7 +789,7 @@ export default function MasterBarangPage() {
               <UploadCloud className="w-10 h-10 text-sky-500 mx-auto mb-2" />
               <p className="font-bold text-slate-700">Upload File Spreadsheet (.xlsx / .csv)</p>
               <p className="text-[11px] text-slate-400 mt-1 mb-3">
-                Kolom Excel: SKU, Material/Grade, Thread, Jenis Barang, Panjang, Finishing, Satuan, Stok, Harga Beli, Harga Cash, Harga Tempo, Harga Retail, Harga Grosir, Lokasi.
+                Kolom Excel: SKU, Material/Grade, Thread, Jenis Barang, Panjang, Finishing, Satuan, Stok, Harga Beli, Harga Retail, Harga Grosir, Lokasi.
               </p>
               <input
                 type="file"
