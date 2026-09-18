@@ -163,7 +163,7 @@ export default function CekStokPage() {
           }`}
         >
           <Filter className="w-4 h-4" />
-          <span>1. Dropdown Filter 5 Spesifikasi</span>
+          <span>1. Filter Spesifikasi</span>
         </button>
 
         <button
@@ -185,7 +185,7 @@ export default function CekStokPage() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h3 className="text-sm font-extrabold text-amber-400 flex items-center gap-2">
               <Filter className="w-4 h-4" />
-              <span>Filter Spesifikasi Bertingkat (5 Menu)</span>
+              <span>Filter Spesifikasi</span>
             </h3>
             <span className="text-xs text-slate-400">Pilih atribut spesifikasi untuk menyaring barang</span>
           </div>
@@ -214,7 +214,7 @@ export default function CekStokPage() {
                 onChange={(e) => setThread(e.target.value)}
                 className="w-full bg-slate-800 text-xs font-bold text-amber-300 p-2.5 rounded-xl border border-amber-500/40 focus:ring-2 focus:ring-amber-500 focus:outline-none"
               >
-                <option value="">-- Semua Thread (M4, M8, UNC, dll) --</option>
+                <option value="">-- Semua Thread --</option>
                 {specs.threads?.map((th: string) => (
                   <option key={th} value={th}>{th}</option>
                 ))}
