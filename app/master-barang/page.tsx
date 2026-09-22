@@ -151,6 +151,8 @@ export default function MasterBarangPage() {
     finishing: false,
   });
 
+  const [onlyAvailableStock, setOnlyAvailableStock] = useState(false);
+
   // Excel Import Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importValidation, setImportValidation] = useState<any | null>(null);
@@ -480,9 +482,14 @@ export default function MasterBarangPage() {
     }
   };
 
+  // Filter products by stock > 0 if onlyAvailableStock is checked
+  const filteredProducts = onlyAvailableStock
+    ? products.filter((p) => p.stock > 0)
+    : products;
+
   // Pagination slicing
-  const totalPages = Math.ceil(products.length / itemsPerPage);
-  const paginatedProducts = products.slice(
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -518,16 +525,36 @@ export default function MasterBarangPage() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-3">
-        <Search className="w-5 h-5 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Cari SKU, nama barang, atau kata kunci spesifikasi..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 text-xs font-semibold focus:outline-none"
-        />
+      {/* Search Bar & Stock Filter Toggle */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex-1 flex items-center gap-3">
+          <Search className="w-5 h-5 text-slate-400 shrink-0" />
+          <input
+            type="text"
+            placeholder="Cari SKU, nama barang, atau kata kunci spesifikasi..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full text-xs font-semibold focus:outline-none"
+          />
+        </div>
+
+        <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200/80 transition-all select-none shrink-0">
+          <input
+            type="checkbox"
+            checked={onlyAvailableStock}
+            onChange={(e) => {
+              setOnlyAvailableStock(e.target.checked);
+              setCurrentPage(1);
+            }}
+            className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+          />
+          <span className="text-xs font-bold text-slate-700">
+            Hanya stok tersedia
+          </span>
+        </label>
       </div>
 
       {/* Products Data Table */}
@@ -621,7 +648,7 @@ export default function MasterBarangPage() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
-          totalItems={products.length}
+          totalItems={filteredProducts.length}
           itemsPerPage={itemsPerPage}
         />
       </div>
