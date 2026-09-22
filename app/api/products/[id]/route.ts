@@ -6,11 +6,34 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const body = await req.json();
     const { id } = params;
-    const { userName = 'Admin', thread, materialGrade, ...updateData } = body;
+    const { userName = 'Admin', thread, materialGrade, sku, ...updateData } = body;
 
     const currentProduct = await prisma.product.findUnique({ where: { id } });
     if (!currentProduct) {
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
+    }
+
+    let finalSku = currentProduct.sku;
+    if (sku && typeof sku === 'string' && sku.trim() !== '') {
+      const trimmedSku = sku.trim();
+      if (trimmedSku !== currentProduct.sku) {
+        let candidateSku = trimmedSku;
+        let counter = 1;
+        while (
+          await prisma.product.findFirst({
+            where: {
+              sku: candidateSku,
+              id: { not: id },
+            },
+          })
+        ) {
+          counter++;
+          candidateSku = `${trimmedSku}-${counter}`;
+        }
+        finalSku = candidateSku;
+      } else {
+        finalSku = currentProduct.sku;
+      }
     }
 
     if (thread !== undefined) {
@@ -40,6 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       where: { id },
       data: {
         ...updateData,
+        sku: finalSku,
         stock: updateData.stock !== undefined ? Number(updateData.stock) : currentProduct.stock,
         minStock: updateData.minStock !== undefined ? Number(updateData.minStock) : currentProduct.minStock,
         buyPrice: updateData.buyPrice !== undefined ? Number(updateData.buyPrice) : currentProduct.buyPrice,
@@ -62,7 +86,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json(product);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error.code === 'P2002') {
+      return NextResponse.json({ error: 'SKU atau barcode tersebut sudah digunakan oleh produk lain' }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message || 'Gagal mengedit produk' }, { status: 500 });
   }
 }
 
