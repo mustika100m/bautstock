@@ -42,13 +42,15 @@ export function Header({ currentUser, onLogout }: HeaderProps) {
 
         {/* User Info & Log Out */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/penjualan"
-            className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md shadow-emerald-500/20 transition-all"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>POS Penjualan</span>
-          </Link>
+          {userRole !== 'GUDANG' && (
+            <Link
+              href="/penjualan"
+              className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md shadow-emerald-500/20 transition-all"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>POS Penjualan</span>
+            </Link>
+          )}
 
           {/* User Info Badge (Static Display, NO Dropdown) */}
           <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 text-xs">
