@@ -25,6 +25,19 @@ export default function PenjualanPage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'pos' | 'history'>('pos');
 
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('bautstock_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role === 'GUDANG') {
+          window.location.href = '/cek-stok';
+          return;
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   // Master Data
   const [products, setProducts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -37,7 +50,7 @@ export default function PenjualanPage() {
   const [newCustomerName, setNewCustomerName] = useState<string>('');
   const [newCustomerPhone, setNewCustomerPhone] = useState<string>('');
 
-  const [priceType, setPriceType] = useState<'CASH' | 'TEMPO' | 'RETAIL' | 'WHOLESALE'>('CASH');
+  const [priceType, setPriceType] = useState<'RETAIL' | 'GROSIR' | 'CUSTOM'>('RETAIL');
   const [cart, setCart] = useState<any[]>([]);
   const [orderDiscount, setOrderDiscount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'CREDIT'>('CASH');
@@ -53,7 +66,7 @@ export default function PenjualanPage() {
   const [isEditingSale, setIsEditingSale] = useState(false);
   const [editSaleForm, setEditSaleForm] = useState({
     customerName: '',
-    priceType: 'CASH',
+    priceType: 'RETAIL',
     paymentMethod: 'CASH',
     discount: 0,
     notes: '',
@@ -149,28 +162,29 @@ export default function PenjualanPage() {
   const handleCustomerChange = (custCodeId: string) => {
     setSelectedCustomerId(custCodeId);
     if (!custCodeId) {
-      setPriceType('CASH');
+      setPriceType('RETAIL');
       return;
     }
 
     const cust = customers.find((c) => c.id === custCodeId);
     if (cust) {
-      if (cust.customerType === 'GROSIR') setPriceType('WHOLESALE');
+      if (cust.customerType === 'GROSIR' || cust.customerType === 'DISTRIBUTOR') setPriceType('GROSIR');
       else if (cust.customerType === 'TEMPO') {
-        setPriceType('TEMPO');
+        setPriceType('RETAIL');
         setPaymentMethod('CREDIT');
-      } else if (cust.customerType === 'DISTRIBUTOR') setPriceType('WHOLESALE');
-      else setPriceType('RETAIL');
+      } else setPriceType('RETAIL');
     }
   };
 
   // Add item to cart
   const addToCart = (product: any) => {
     const existing = cart.find((item) => item.productId === product.id);
-    let selectedPrice = product.cashPrice;
-    if (priceType === 'TEMPO') selectedPrice = product.tempoPrice;
-    if (priceType === 'RETAIL') selectedPrice = product.retailPrice;
-    if (priceType === 'WHOLESALE') selectedPrice = product.wholesalePrice;
+    let selectedPrice = product.retailPrice > 0 ? product.retailPrice : (product.cashPrice || 0);
+    if (priceType === 'GROSIR') {
+      selectedPrice = product.wholesalePrice > 0 ? product.wholesalePrice : (product.tempoPrice || product.retailPrice || 0);
+    } else if (priceType === 'CUSTOM') {
+      selectedPrice = existing ? existing.price : (product.retailPrice > 0 ? product.retailPrice : (product.cashPrice || 0));
+    }
 
     if (existing) {
       setCart(
@@ -205,6 +219,16 @@ export default function PenjualanPage() {
     );
   };
 
+  // Update item custom price in cart
+  const updateCartPriceExact = (productId: string, val: number) => {
+    const targetPrice = Math.max(0, isNaN(val) ? 0 : val);
+    setCart(
+      cart.map((item) =>
+        item.productId === productId ? { ...item, price: targetPrice } : item
+      )
+    );
+  };
+
   const updateCartQtyDelta = (productId: string, delta: number) => {
     setCart(
       cart
@@ -225,14 +249,15 @@ export default function PenjualanPage() {
 
   // Recalculate price when priceType changes
   useEffect(() => {
+    if (priceType === 'CUSTOM') return; // Preserve custom prices when switching to CUSTOM mode
     setCart((prevCart) =>
       prevCart.map((item) => {
         const prod = products.find((p) => p.id === item.productId);
         if (!prod) return item;
-        let pVal = prod.cashPrice;
-        if (priceType === 'TEMPO') pVal = prod.tempoPrice;
-        if (priceType === 'RETAIL') pVal = prod.retailPrice;
-        if (priceType === 'WHOLESALE') pVal = prod.wholesalePrice;
+        let pVal = prod.retailPrice > 0 ? prod.retailPrice : (prod.cashPrice || 0);
+        if (priceType === 'GROSIR') {
+          pVal = prod.wholesalePrice > 0 ? prod.wholesalePrice : (prod.tempoPrice || prod.retailPrice || 0);
+        }
         return { ...item, price: pVal };
       })
     );
@@ -375,9 +400,9 @@ export default function PenjualanPage() {
       </div>
 
       {activeTab === 'pos' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Product Picker (7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6">
+          {/* Left Column: Product Picker (7 cols on desktop, order-2 on mobile) */}
+          <div className="order-2 lg:order-1 lg:col-span-7 space-y-4">
             {/* Search Input */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-3">
               <Search className="w-5 h-5 text-slate-400" />
@@ -393,10 +418,10 @@ export default function PenjualanPage() {
             {/* Products Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[650px] overflow-y-auto pr-1">
               {filteredProducts.map((prod) => {
-                let pPrice = prod.cashPrice;
-                if (priceType === 'TEMPO') pPrice = prod.tempoPrice;
-                if (priceType === 'RETAIL') pPrice = prod.retailPrice;
-                if (priceType === 'WHOLESALE') pPrice = prod.wholesalePrice;
+                let pPrice = prod.retailPrice > 0 ? prod.retailPrice : (prod.cashPrice || 0);
+                if (priceType === 'GROSIR') {
+                  pPrice = prod.wholesalePrice > 0 ? prod.wholesalePrice : (prod.tempoPrice || prod.retailPrice || 0);
+                }
 
                 return (
                   <button
@@ -430,7 +455,7 @@ export default function PenjualanPage() {
                         Harga ({priceType}):
                       </span>
                       <span className="text-sm font-black text-emerald-600">
-                        {formatRupiah(pPrice)}
+                        {priceType === 'CUSTOM' ? 'Custom (Dapat Diedit)' : formatRupiah(pPrice)}
                       </span>
                     </div>
                   </button>
@@ -439,8 +464,8 @@ export default function PenjualanPage() {
             </div>
           </div>
 
-          {/* Right Column: POS Cart & Billing Panel (5 cols) */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col justify-between space-y-4">
+          {/* Right Column: POS Cart & Billing Panel (5 cols on desktop, order-1 on mobile) */}
+          <div className="order-1 lg:order-2 lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col justify-between space-y-4">
             <div className="space-y-4">
               {/* Customer Mode Selection */}
               <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
@@ -509,30 +534,38 @@ export default function PenjualanPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <label className="block font-bold text-slate-700 mb-1.5 flex items-center gap-1">
                     <Tag className="w-3.5 h-3.5 text-amber-500" /> Tipe Harga Digunakan
                   </label>
-                  <div className="grid grid-cols-4 gap-1 text-center font-extrabold text-[10px]">
-                    {(['CASH', 'TEMPO', 'RETAIL', 'WHOLESALE'] as const).map((t) => (
+                  <div className="grid grid-cols-3 gap-2 text-center font-extrabold text-xs">
+                    {(['RETAIL', 'GROSIR', 'CUSTOM'] as const).map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => setPriceType(t)}
-                        className={`py-1.5 rounded-lg border transition-all ${
+                        className={`py-2 px-2.5 rounded-xl border transition-all font-bold ${
                           priceType === t
-                            ? 'bg-slate-900 text-amber-400 border-slate-900 shadow-sm'
+                            ? 'bg-slate-900 text-amber-400 border-slate-900 shadow-md scale-[1.02]'
                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
-                        {t}
+                        {t === 'RETAIL' && 'RETAIL'}
+                        {t === 'GROSIR' && 'GROSIR'}
+                        {t === 'CUSTOM' && 'CUSTOM'}
                       </button>
                     ))}
                   </div>
+                  {priceType === 'CUSTOM' && (
+                    <div className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 mt-2 flex items-start gap-1.5 shadow-sm">
+                      <span className="text-amber-600 text-xs">💡</span>
+                      <span>Tipe Custom Aktif: Anda dapat mengetik / mengubah harga satuan barang secara langsung di keranjang belanja.</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Cart List */}
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Daftar Barang ({cart.length} Item)
                 </h3>
@@ -544,51 +577,81 @@ export default function PenjualanPage() {
                   cart.map((item) => (
                     <div
                       key={item.productId}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-xl text-xs border border-slate-100"
+                      className={`p-3 rounded-xl text-xs border transition-all ${
+                        priceType === 'CUSTOM'
+                          ? 'bg-amber-50/50 border-amber-200/80 shadow-sm'
+                          : 'bg-slate-50 border-slate-100'
+                      }`}
                     >
-                      <div className="flex-1 pr-2">
-                        <h4 className="font-bold text-slate-800 line-clamp-1">{item.name}</h4>
-                        <p className="text-[10px] text-slate-400">
-                          {formatRupiah(item.price)} / {item.unit}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                          <button
-                            type="button"
-                            onClick={() => updateCartQtyDelta(item.productId, -1)}
-                            className="p-1 text-slate-500 hover:bg-slate-100"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.qty}
-                            onChange={(e) => updateCartQtyExact(item.productId, parseInt(e.target.value))}
-                            className="w-14 text-center font-extrabold text-slate-900 text-xs py-1 focus:outline-none bg-emerald-50/40"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => updateCartQtyDelta(item.productId, 1)}
-                            className="p-1 text-slate-500 hover:bg-slate-100"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex-1 pr-1">
+                          <h4 className="font-bold text-slate-800 line-clamp-1">{item.name}</h4>
+                          {priceType === 'CUSTOM' ? (
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <span className="text-[10px] font-extrabold text-amber-800 uppercase">Harga Custom (Rp):</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.price}
+                                onChange={(e) => updateCartPriceExact(item.productId, Number(e.target.value))}
+                                className="w-28 p-1.5 rounded-lg border border-amber-300 font-black text-amber-900 bg-white text-xs text-right focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm"
+                              />
+                              <span className="text-[10px] font-bold text-slate-400">/ {item.unit}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[10px] text-slate-400">
+                                {formatRupiah(item.price)} / {item.unit}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setPriceType('CUSTOM')}
+                                className="text-[9px] font-extrabold text-amber-600 hover:text-amber-800 hover:underline"
+                              >
+                                (Edit Custom)
+                              </button>
+                            </div>
+                          )}
                         </div>
 
-                        <span className="font-extrabold text-slate-800 w-20 text-right">
-                          {formatRupiah(item.qty * item.price)}
-                        </span>
+                        <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                          <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                            <button
+                              type="button"
+                              onClick={() => updateCartQtyDelta(item.productId, -1)}
+                              className="p-1 text-slate-500 hover:bg-slate-100"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.qty}
+                              onChange={(e) => updateCartQtyExact(item.productId, parseInt(e.target.value))}
+                              className="w-14 text-center font-extrabold text-slate-900 text-xs py-1 focus:outline-none bg-emerald-50/40"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => updateCartQtyDelta(item.productId, 1)}
+                              className="p-1 text-slate-500 hover:bg-slate-100"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
 
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(item.productId)}
-                          className="text-slate-400 hover:text-rose-600 p-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                          <span className="font-black text-slate-900 w-20 text-right text-xs">
+                            {formatRupiah(item.qty * item.price)}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.productId)}
+                            className="text-slate-400 hover:text-rose-600 p-1"
+                            title="Hapus barang"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
