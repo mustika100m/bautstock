@@ -43,9 +43,9 @@ export function Sidebar({ userRole, userName, lowStockCount = 0, onLogout }: Sid
     { href: '/penjualan', label: 'Penjualan (POS)', icon: Receipt, permission: 'CREATE_SALE' },
     { href: '/pembelian', label: 'Pembelian', icon: ShoppingCart, permission: 'CREATE_PURCHASE' },
     { href: '/pelanggan', label: 'Pelanggan', icon: Users, permission: 'VIEW_CUSTOMERS' },
-    { href: '/supplier', label: 'Supplier', icon: Truck, permission: 'CREATE_PURCHASE' },
+    { href: '/supplier', label: 'Supplier', icon: Truck, permission: 'VIEW_SUPPLIERS' },
     { href: '/piutang', label: 'Piutang', icon: CreditCard, permission: 'CREATE_SALE' },
-    { href: '/hutang', label: 'Hutang', icon: Wallet, permission: 'CREATE_PURCHASE' },
+    { href: '/hutang', label: 'Hutang', icon: Wallet, permission: 'VIEW_HUTANG' },
     { href: '/mutasi-stok', label: 'Mutasi Stok', icon: ArrowLeftRight, permission: 'VIEW_STOCK_MOVEMENTS' },
     { href: '/stock-opname', label: 'Stock Opname', icon: ClipboardCheck, permission: 'CREATE_STOCK_OPNAME' },
     {
@@ -55,7 +55,7 @@ export function Sidebar({ userRole, userName, lowStockCount = 0, onLogout }: Sid
       badge: lowStockCount > 0 ? lowStockCount : undefined,
       permission: 'VIEW_MIN_STOCK',
     },
-    { href: '/laporan', label: 'Laporan', icon: BarChart3, permission: 'VIEW_PRODUCTS' },
+    { href: '/laporan', label: 'Laporan', icon: BarChart3, permission: 'VIEW_REPORTS' },
     { href: '/pengguna', label: 'Pengguna', icon: UserCheck, permission: 'CHANGE_NEGATIVE_STOCK_SETTING' },
     { href: '/pengaturan', label: 'Pengaturan', icon: Settings, permission: 'CHANGE_NEGATIVE_STOCK_SETTING' },
     { href: '/audit-log', label: 'Audit Log', icon: History, permission: 'CHANGE_NEGATIVE_STOCK_SETTING' },
@@ -64,12 +64,15 @@ export function Sidebar({ userRole, userName, lowStockCount = 0, onLogout }: Sid
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-300 border-r border-slate-800 shrink-0 min-h-screen">
       {/* Brand Header */}
-      <div className="p-3.5 border-b border-slate-800/80 bg-white/95 rounded-2xl mx-3 mt-3 shadow-md overflow-hidden flex items-center justify-center">
-        <Link href="/" className="flex items-center justify-center">
+      <div className="p-3 bg-white rounded-2xl mx-3 mt-3 shadow-md border border-slate-200/80 overflow-hidden flex items-center justify-center">
+        <Link href="/" className="flex items-center justify-center w-full">
           <img
             src="/logo.png"
             alt="MUSTIKA BAUT"
-            className="h-14 w-auto max-w-full object-contain rounded-xl"
+            className="h-14 w-auto max-w-full object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/logo.webp';
+            }}
           />
         </Link>
       </div>
