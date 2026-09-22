@@ -42,9 +42,9 @@ export function MobileNav({ userRole, lowStockCount = 0 }: MobileNavProps) {
     { href: '/penjualan', label: 'Penjualan (POS)', icon: Receipt, permission: 'CREATE_SALE' },
     { href: '/pembelian', label: 'Pembelian', icon: ShoppingCart, permission: 'CREATE_PURCHASE' },
     { href: '/pelanggan', label: 'Pelanggan', icon: Users, permission: 'VIEW_CUSTOMERS' },
-    { href: '/supplier', label: 'Supplier', icon: Truck, permission: 'CREATE_PURCHASE' },
+    { href: '/supplier', label: 'Supplier', icon: Truck, permission: 'VIEW_SUPPLIERS' },
     { href: '/piutang', label: 'Piutang', icon: CreditCard, permission: 'CREATE_SALE' },
-    { href: '/hutang', label: 'Hutang', icon: Wallet, permission: 'CREATE_PURCHASE' },
+    { href: '/hutang', label: 'Hutang', icon: Wallet, permission: 'VIEW_HUTANG' },
     { href: '/mutasi-stok', label: 'Mutasi Stok', icon: ArrowLeftRight, permission: 'VIEW_STOCK_MOVEMENTS' },
     { href: '/stock-opname', label: 'Stock Opname', icon: ClipboardCheck, permission: 'CREATE_STOCK_OPNAME' },
     {
@@ -54,7 +54,7 @@ export function MobileNav({ userRole, lowStockCount = 0 }: MobileNavProps) {
       badge: lowStockCount > 0 ? lowStockCount : undefined,
       permission: 'VIEW_MIN_STOCK',
     },
-    { href: '/laporan', label: 'Laporan', icon: BarChart3, permission: 'VIEW_PRODUCTS' },
+    { href: '/laporan', label: 'Laporan', icon: BarChart3, permission: 'VIEW_REPORTS' },
     { href: '/pengguna', label: 'Pengguna', icon: UserCheck, permission: 'CHANGE_NEGATIVE_STOCK_SETTING' },
     { href: '/pengaturan', label: 'Pengaturan', icon: Settings, permission: 'CHANGE_NEGATIVE_STOCK_SETTING' },
     { href: '/audit-log', label: 'Audit Log', icon: History, permission: 'CHANGE_NEGATIVE_STOCK_SETTING' },
@@ -120,11 +120,14 @@ export function MobileNav({ userRole, lowStockCount = 0 }: MobileNavProps) {
       {isOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex bg-slate-950/70 backdrop-blur-sm">
           <div className="w-4/5 max-w-sm bg-slate-900 text-slate-300 flex flex-col h-full shadow-2xl border-r border-slate-800">
-            <div className="p-3 flex items-center justify-between border-b border-slate-800 bg-white/95 rounded-2xl overflow-hidden m-3 shadow-md">
+            <div className="p-3 flex items-center justify-between border-b border-slate-200 bg-white rounded-2xl overflow-hidden m-3 shadow-md">
               <img
                 src="/logo.png"
                 alt="MUSTIKA BAUT"
-                className="h-10 w-auto object-contain rounded-lg"
+                className="h-10 w-auto object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.webp';
+                }}
               />
               <button
                 onClick={() => setIsOpen(false)}
