@@ -382,7 +382,9 @@ export default function MasterBarangPage() {
 
       const finalFormData = {
         ...formData,
-        sku: formData.sku && formData.sku.trim() !== '' ? formData.sku.trim() : generateAutoSku(formData),
+        sku: formData.sku && formData.sku.trim() !== '' 
+          ? formData.sku.trim() 
+          : (editingProduct && editingProduct.sku ? editingProduct.sku : generateAutoSku(formData)),
         name: formData.name && formData.name.trim() !== '' ? formData.name.trim() : autoName,
       };
 
