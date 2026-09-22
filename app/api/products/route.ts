@@ -163,7 +163,16 @@ export async function POST(req: NextRequest) {
     if (isAutoSku) {
       let counter = 1;
       let candidateSku = finalSku;
-      while (await prisma.product.findUnique({ where: { sku: candidateSku } })) {
+      while (true) {
+        const existing = await prisma.product.findUnique({ where: { sku: candidateSku } });
+        if (!existing) break;
+        if (existing.status === 'INACTIVE') {
+          await prisma.product.update({
+            where: { id: existing.id },
+            data: { sku: `${existing.sku}_INACTIVE_${Date.now()}` },
+          });
+          break;
+        }
         counter++;
         candidateSku = `${finalSku}-${counter}`;
       }
@@ -171,7 +180,14 @@ export async function POST(req: NextRequest) {
     } else {
       const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
       if (existingSku) {
-        return NextResponse.json({ error: `SKU "${finalSku}" sudah digunakan oleh produk lain` }, { status: 400 });
+        if (existingSku.status === 'INACTIVE') {
+          await prisma.product.update({
+            where: { id: existingSku.id },
+            data: { sku: `${existingSku.sku}_INACTIVE_${Date.now()}` },
+          });
+        } else {
+          return NextResponse.json({ error: `SKU "${finalSku}" sudah digunakan oleh produk aktif "${existingSku.name}"` }, { status: 400 });
+        }
       }
     }
 
