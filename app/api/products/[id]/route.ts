@@ -17,22 +17,30 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (sku && typeof sku === 'string' && sku.trim() !== '') {
       const trimmedSku = sku.trim();
       if (trimmedSku !== currentProduct.sku) {
-        let candidateSku = trimmedSku;
-        let counter = 1;
-        while (
-          await prisma.product.findFirst({
-            where: {
-              sku: candidateSku,
-              id: { not: id },
-            },
-          })
-        ) {
-          counter++;
-          candidateSku = `${trimmedSku}-${counter}`;
+        const existingOther = await prisma.product.findFirst({
+          where: {
+            sku: trimmedSku,
+            id: { not: id },
+          },
+        });
+
+        if (existingOther) {
+          if (existingOther.status === 'INACTIVE') {
+            // Free up SKU from inactive product
+            await prisma.product.update({
+              where: { id: existingOther.id },
+              data: { sku: `${existingOther.sku}_INACTIVE_${Date.now()}` },
+            });
+            finalSku = trimmedSku;
+          } else {
+            return NextResponse.json(
+              { error: `SKU "${trimmedSku}" sudah digunakan oleh produk aktif "${existingOther.name}"` },
+              { status: 400 }
+            );
+          }
+        } else {
+          finalSku = trimmedSku;
         }
-        finalSku = candidateSku;
-      } else {
-        finalSku = currentProduct.sku;
       }
     }
 
@@ -101,10 +109,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
     }
 
-    // Soft delete by marking INACTIVE
+    // Soft delete by marking INACTIVE and freeing up SKU for future active products
+    const freeSku = product.sku.includes('_INACTIVE_') ? product.sku : `${product.sku}_INACTIVE_${Date.now()}`;
     await prisma.product.update({
       where: { id },
-      data: { status: 'INACTIVE' },
+      data: {
+        status: 'INACTIVE',
+        sku: freeSku,
+      },
     });
 
     await recordAuditLog('Admin', 'EDIT_PRODUCT', `Menonaktifkan produk: ${product.name} (SKU: ${product.sku})`);
