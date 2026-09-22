@@ -35,13 +35,12 @@ export function hasPermission(role: UserRole, action: string): boolean {
   }
   
   if (role === 'GUDANG') {
-    // Gudang can access stock management, purchases receiving, stock opname, stock movements, min stock
+    // Gudang can access Dashboard, Cek Stok, Master Barang, Mutasi Stok, Stock Opname, and Min Stock
+    // (No access to Pembelian, Supplier, Hutang, or Laporan)
     const allowed = [
       'VIEW_CEK_STOK',
       'VIEW_PRODUCTS',
       'EDIT_PRODUCT_STOCK',
-      'CREATE_PURCHASE',
-      'VIEW_PURCHASES',
       'CREATE_STOCK_OPNAME',
       'VIEW_STOCK_MOVEMENTS',
       'VIEW_MIN_STOCK',
