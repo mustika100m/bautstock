@@ -84,15 +84,17 @@ export function MobileNav({ userRole, lowStockCount = 0 }: MobileNavProps) {
           <span className="text-amber-300">Cek Stok</span>
         </Link>
 
-        <Link
-          href="/penjualan"
-          className={`flex flex-col items-center gap-1 text-[10px] font-semibold ${
-            pathname === '/penjualan' ? 'text-emerald-400' : 'hover:text-slate-200'
-          }`}
-        >
-          <Receipt className="w-5 h-5" />
-          <span>POS</span>
-        </Link>
+        {hasPermission(userRole, 'CREATE_SALE') && (
+          <Link
+            href="/penjualan"
+            className={`flex flex-col items-center gap-1 text-[10px] font-semibold ${
+              pathname === '/penjualan' ? 'text-emerald-400' : 'hover:text-slate-200'
+            }`}
+          >
+            <Receipt className="w-5 h-5" />
+            <span>POS</span>
+          </Link>
+        )}
 
         <Link
           href="/stok-minimum"
