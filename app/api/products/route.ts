@@ -70,7 +70,18 @@ export async function GET(req: NextRequest) {
 
     // Fetch distinct spec values for cascading dropdowns
     const allActive = await prisma.product.findMany({ where: { status: 'ACTIVE' } });
-    const materialGrades = Array.from(new Set(allActive.map((p) => `${p.material} ${p.grade}`.replace(/-$/, '').trim()))).filter(Boolean).sort();
+    const materialGrades = Array.from(
+      new Set(
+        allActive
+          .map((p) => {
+            let mat = (p.material || '').replace(/\s*-\s*$/g, '').trim();
+            let gr = (p.grade || '').replace(/^-+$/g, '').trim();
+            let str = `${mat} ${gr}`.replace(/\s+/g, ' ').trim();
+            str = str.replace(/GR\s*-\s*/gi, 'GR ');
+            return str;
+          })
+      )
+    ).filter((mg) => Boolean(mg) && mg !== '-' && !mg.includes('-')).sort();
     const threads = Array.from(new Set(allActive.map((p) => p.metric))).filter(Boolean).sort();
     const itemTypes = Array.from(new Set(allActive.map((p) => p.itemType))).filter(Boolean).sort();
     const lengths = Array.from(new Set(allActive.map((p) => p.length))).filter(Boolean).sort();
