@@ -22,8 +22,17 @@ import { formatRupiah, formatTanggal, getStockStatus } from '@/lib/formatters';
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('KASIR');
 
   useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('bautstock_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role) setUserRole(parsed.role);
+      }
+    } catch (e) {}
+
     async function loadDashboardData() {
       try {
         const [prodRes, salesRes, purRes, recRes] = await Promise.all([
@@ -77,6 +86,8 @@ export default function DashboardPage() {
     loadDashboardData();
   }, []);
 
+  const isGudang = userRole === 'GUDANG';
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -106,18 +117,20 @@ export default function DashboardPage() {
             <Search className="w-4 h-4" />
             <span>Cek Stok Barang</span>
           </Link>
-          <Link
-            href="/penjualan"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition-all"
-          >
-            <Receipt className="w-4 h-4" />
-            <span>POS Penjualan</span>
-          </Link>
+          {!isGudang && (
+            <Link
+              href="/penjualan"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition-all"
+            >
+              <Receipt className="w-4 h-4" />
+              <span>POS Penjualan</span>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGudang ? 'lg:grid-cols-2' : 'lg:grid-cols-4'} gap-4`}>
         {/* Total SKU */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
@@ -144,60 +157,68 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Nilai Persediaan */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Nilai Persediaan (HPP)</p>
-            <h3 className="text-xl font-extrabold text-slate-800 mt-1">
-              {formatRupiah(stats?.nilaiPersediaan || 0)}
-            </h3>
-            <p className="text-[11px] font-medium text-slate-500 mt-1">Modal barang di toko</p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
+        {!isGudang && (
+          <>
+            {/* Nilai Persediaan */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Nilai Persediaan (HPP)</p>
+                <h3 className="text-xl font-extrabold text-slate-800 mt-1">
+                  {formatRupiah(stats?.nilaiPersediaan || 0)}
+                </h3>
+                <p className="text-[11px] font-medium text-slate-500 mt-1">Modal barang di toko</p>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                <DollarSign className="w-6 h-6" />
+              </div>
+            </div>
 
-        {/* Total Piutang */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Total Piutang Belum Lunas</p>
-            <h3 className="text-xl font-extrabold text-rose-600 mt-1">
-              {formatRupiah(stats?.totalPiutang || 0)}
-            </h3>
-            <p className="text-[11px] font-medium text-rose-500 mt-1">Tagihan ke pelanggan</p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <CreditCard className="w-6 h-6" />
-          </div>
-        </div>
+            {/* Total Piutang */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Total Piutang Belum Lunas</p>
+                <h3 className="text-xl font-extrabold text-rose-600 mt-1">
+                  {formatRupiah(stats?.totalPiutang || 0)}
+                </h3>
+                <p className="text-[11px] font-medium text-rose-500 mt-1">Tagihan ke pelanggan</p>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                <CreditCard className="w-6 h-6" />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Secondary Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Penjualan Hari Ini</p>
-            <h3 className="text-xl font-extrabold text-emerald-600 mt-1">
-              {formatRupiah(stats?.penjualanHariIni || 0)}
-            </h3>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGudang ? 'lg:grid-cols-2' : 'lg:grid-cols-4'} gap-4`}>
+        {!isGudang && (
+          <>
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Penjualan Hari Ini</p>
+                <h3 className="text-xl font-extrabold text-emerald-600 mt-1">
+                  {formatRupiah(stats?.penjualanHariIni || 0)}
+                </h3>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+            </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Pembelian Hari Ini</p>
-            <h3 className="text-xl font-extrabold text-blue-600 mt-1">
-              {formatRupiah(stats?.pembelianHariIni || 0)}
-            </h3>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <ShoppingCart className="w-5 h-5" />
-          </div>
-        </div>
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Pembelian Hari Ini</p>
+                <h3 className="text-xl font-extrabold text-blue-600 mt-1">
+                  {formatRupiah(stats?.pembelianHariIni || 0)}
+                </h3>
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+            </div>
+          </>
+        )}
 
         <Link
           href="/stok-minimum"
@@ -231,72 +252,74 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Transactions Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base font-bold text-slate-800">Transaksi Penjualan Terbaru</h3>
-            <p className="text-xs text-slate-500">5 transaksi terakhir yang diproses di kasir POS</p>
+      {!isGudang && (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-800">Transaksi Penjualan Terbaru</h3>
+              <p className="text-xs text-slate-500">5 transaksi terakhir yang diproses di kasir POS</p>
+            </div>
+            <Link
+              href="/penjualan"
+              className="flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-700"
+            >
+              <span>Lihat Semua Penjualan</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <Link
-            href="/penjualan"
-            className="flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-700"
-          >
-            <span>Lihat Semua Penjualan</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-y border-slate-100">
-              <tr>
-                <th className="py-3 px-4">No. Invoice</th>
-                <th className="py-3 px-4">Tanggal</th>
-                <th className="py-3 px-4">Pelanggan</th>
-                <th className="py-3 px-4">Tipe Harga</th>
-                <th className="py-3 px-4">Pembayaran</th>
-                <th className="py-3 px-4 text-right">Grand Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {stats?.recentSales?.map((sale: any) => (
-                <tr key={sale.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3 px-4 font-bold text-sky-700">{sale.invoiceNo}</td>
-                  <td className="py-3 px-4 text-slate-600">{formatTanggal(sale.date)}</td>
-                  <td className="py-3 px-4 font-medium text-slate-800">{sale.customerName}</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700 border border-slate-200">
-                      {sale.priceType}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
-                        sale.paymentStatus === 'PAID'
-                          ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                          : 'bg-rose-100 text-rose-700 border-rose-200'
-                      }`}
-                    >
-                      {sale.paymentStatus === 'PAID' ? 'LUNAS' : 'TEMPO'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right font-extrabold text-slate-800">
-                    {formatRupiah(sale.grandTotal)}
-                  </td>
-                </tr>
-              ))}
-
-              {(!stats?.recentSales || stats.recentSales.length === 0) && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-y border-slate-100">
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    Belum ada transaksi penjualan recorded
-                  </td>
+                  <th className="py-3 px-4">No. Invoice</th>
+                  <th className="py-3 px-4">Tanggal</th>
+                  <th className="py-3 px-4">Pelanggan</th>
+                  <th className="py-3 px-4">Tipe Harga</th>
+                  <th className="py-3 px-4">Pembayaran</th>
+                  <th className="py-3 px-4 text-right">Grand Total</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {stats?.recentSales?.map((sale: any) => (
+                  <tr key={sale.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-bold text-sky-700">{sale.invoiceNo}</td>
+                    <td className="py-3 px-4 text-slate-600">{formatTanggal(sale.date)}</td>
+                    <td className="py-3 px-4 font-medium text-slate-800">{sale.customerName}</td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700 border border-slate-200">
+                        {sale.priceType}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                          sale.paymentStatus === 'PAID'
+                            ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                            : 'bg-rose-100 text-rose-700 border-rose-200'
+                        }`}
+                      >
+                        {sale.paymentStatus === 'PAID' ? 'LUNAS' : 'TEMPO'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right font-extrabold text-slate-800">
+                      {formatRupiah(sale.grandTotal)}
+                    </td>
+                  </tr>
+                ))}
+
+                {(!stats?.recentSales || stats.recentSales.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      Belum ada transaksi penjualan recorded
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
