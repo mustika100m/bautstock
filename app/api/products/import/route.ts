@@ -121,7 +121,16 @@ export async function POST(req: NextRequest) {
           materialGrade: finalMaterial,
           finishing: finalFinishing,
         });
-        const finalSku = sku || baseSku;
+
+        let isOldAutoSku = false;
+        if (sku) {
+          if (!thread && /-FT-/i.test(sku)) isOldAutoSku = true;
+          if (!finishing && /-HTM$/i.test(sku)) isOldAutoSku = true;
+          if (!length && /-8MM-/i.test(sku)) isOldAutoSku = true;
+          if (!materialGrade && /^GR4\.6-/i.test(sku)) isOldAutoSku = true;
+        }
+
+        const finalSku = (!sku || isOldAutoSku) ? baseSku : sku;
         const autoName = [finalMaterial, finalMetric, rawItemType, finalLength, finalFinishing]
           .filter(Boolean)
           .join(' ')
@@ -143,6 +152,7 @@ export async function POST(req: NextRequest) {
             },
             update: {
               status: 'ACTIVE',
+              sku: finalSku,
               name: autoName,
               unit,
               warehouse: 'Gudang Utama',
