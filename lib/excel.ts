@@ -102,7 +102,14 @@ export function validateProductImport(
     seenSpecsInFile.add(specKey);
 
     const baseSku = generateAutoSku({ category, itemType, thread, length, materialGrade, finishing });
-    let sku = explicitSku || baseSku;
+    let isOldAutoSku = false;
+    if (explicitSku) {
+      if (!thread && /-FT-/i.test(explicitSku)) isOldAutoSku = true;
+      if (!finishing && /-HTM$/i.test(explicitSku)) isOldAutoSku = true;
+      if (!length && /-8MM-/i.test(explicitSku)) isOldAutoSku = true;
+      if (!materialGrade && /^GR4\.6-/i.test(explicitSku)) isOldAutoSku = true;
+    }
+    let sku = (!explicitSku || isOldAutoSku) ? baseSku : explicitSku;
 
     if (seenSkusInFile.has(sku)) {
       duplicateRows.push({ rowNumber: rowNum, sku, reason: 'SKU duplikat dalam file Excel' });
@@ -110,7 +117,7 @@ export function validateProductImport(
     }
     seenSkusInFile.add(sku);
 
-    const isActiveInDb = (explicitSku && activeSkus.has(explicitSku)) || activeSpecs.has(specKey) || (activeSpecs.size === 0 && (existingSkus.has(sku) || existingSpecs.has(specKey)));
+    const isActiveInDb = (sku && activeSkus.has(sku)) || activeSpecs.has(specKey);
 
     if (isActiveInDb) {
       duplicateRows.push({ rowNumber: rowNum, sku, reason: 'SKU / Spesifikasi barang sudah terdaftar dan aktif di database' });
