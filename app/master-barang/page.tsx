@@ -186,6 +186,73 @@ export default function MasterBarangPage() {
     wholesalePrice: 0,
   });
 
+  // Bulk selection & deletion state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showConfirmBulkDelete, setShowConfirmBulkDelete] = useState(false);
+  const [showConfirmResetCatalog, setShowConfirmResetCatalog] = useState(false);
+
+  const handleToggleSelectAll = () => {
+    if (selectedIds.length === paginatedProducts.length && paginatedProducts.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedProducts.map((p) => p.id));
+    }
+  };
+
+  const handleToggleSelectOne = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((item) => item !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleBulkDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch('/api/products/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds, action: 'delete_selected' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus produk terpilih');
+
+      showToast(`Berhasil menonaktifkan ${data.count} produk terpilih`, 'success');
+      setSelectedIds([]);
+      setShowConfirmBulkDelete(false);
+      fetchProducts();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleResetCatalog = async () => {
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch('/api/products/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset_all' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mereset katalog produk');
+
+      showToast(`Berhasil mereset katalog (${data.count} produk dinonaktifkan). Siap untuk re-import Excel!`, 'success');
+      setSelectedIds([]);
+      setShowConfirmResetCatalog(false);
+      fetchProducts();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -271,6 +338,7 @@ export default function MasterBarangPage() {
             }}
             className="w-full p-2.5 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none text-xs"
           >
+            <option value="">-- Kosong --</option>
             {optionsList.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
@@ -296,11 +364,11 @@ export default function MasterBarangPage() {
     setFormData({
       sku: '',
       name: '',
-      materialGrade: 'GR 4.6',
-      thread: 'FT',
-      itemType: 'Baut Mur Hex M.5-P0.80-K8',
-      length: '8 MM',
-      finishing: 'HTM',
+      materialGrade: '',
+      thread: '',
+      itemType: '',
+      length: '',
+      finishing: '',
       unit: 'Pcs',
       pcsPerBox: 100,
       warehouse: 'Gudang Utama',
@@ -323,11 +391,11 @@ export default function MasterBarangPage() {
     setFormData({
       sku: prod.sku,
       name: prod.name,
-      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'GR 4.6',
-      thread: prod.thread || prod.metric || 'FT',
-      itemType: prod.itemType || 'Baut Mur Hex M.5-P0.80-K8',
-      length: prod.length || '8 MM',
-      finishing: prod.finishing || 'HTM',
+      materialGrade: prod.materialGrade || (prod.material && prod.material !== '-' ? `${prod.material || ''} ${prod.grade && prod.grade !== '-' ? prod.grade : ''}`.trim() : ''),
+      thread: prod.thread || (prod.metric && prod.metric !== '-' ? prod.metric : ''),
+      itemType: prod.itemType || '',
+      length: prod.length && prod.length !== '-' ? prod.length : '',
+      finishing: prod.finishing && prod.finishing !== '-' ? prod.finishing : '',
       unit: prod.unit || 'Pcs',
       pcsPerBox: prod.pcsPerBox || 100,
       warehouse: prod.warehouse || 'Gudang Utama',
@@ -350,11 +418,11 @@ export default function MasterBarangPage() {
     setFormData({
       sku: '',
       name: '',
-      materialGrade: prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim() || 'GR 4.6',
-      thread: prod.thread || prod.metric || 'FT',
-      itemType: prod.itemType || 'Baut Mur Hex M.5-P0.80-K8',
-      length: prod.length || '8 MM',
-      finishing: prod.finishing || 'HTM',
+      materialGrade: prod.materialGrade || (prod.material && prod.material !== '-' ? `${prod.material || ''} ${prod.grade && prod.grade !== '-' ? prod.grade : ''}`.trim() : ''),
+      thread: prod.thread || (prod.metric && prod.metric !== '-' ? prod.metric : ''),
+      itemType: prod.itemType || '',
+      length: prod.length && prod.length !== '-' ? prod.length : '',
+      finishing: prod.finishing && prod.finishing !== '-' ? prod.finishing : '',
       unit: prod.unit || 'Pcs',
       pcsPerBox: prod.pcsPerBox || 100,
       warehouse: prod.warehouse || 'Gudang Utama',
@@ -378,7 +446,11 @@ export default function MasterBarangPage() {
       const method = editingProduct ? 'PUT' : 'POST';
 
       // Order: MATL THREAD JENIS_BARANG PANJANG FINISHING
-      const autoName = `${formData.materialGrade} ${formData.thread} ${formData.itemType} ${formData.length} ${formData.finishing}`.replace(/\s+/g, ' ').trim();
+      const autoName = [formData.materialGrade, formData.thread, formData.itemType, formData.length, formData.finishing]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
       const finalFormData = {
         ...formData,
@@ -510,6 +582,23 @@ export default function MasterBarangPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {selectedIds.length > 0 && (
+            <button
+              onClick={() => setShowConfirmBulkDelete(true)}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all shadow-md shadow-rose-600/20"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Hapus Terpilih ({selectedIds.length})</span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowConfirmResetCatalog(true)}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all shadow-sm"
+            title="Kosongkan katalog barang aktif untuk re-import Excel"
+          >
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            <span>Reset Katalog</span>
+          </button>
           <button
             onClick={() => setIsImportModalOpen(true)}
             className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all shadow-sm"
@@ -565,6 +654,14 @@ export default function MasterBarangPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase tracking-wider border-b border-slate-100">
               <tr>
+                <th className="py-3 px-4 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={paginatedProducts.length > 0 && selectedIds.length === paginatedProducts.length}
+                    onChange={handleToggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer accent-sky-600"
+                  />
+                </th>
                 <th className="py-3 px-4">SKU</th>
                 <th className="py-3 px-4">Nama Produk & Specs</th>
                 <th className="py-3 px-4">Lokasi Gudang</th>
@@ -579,9 +676,18 @@ export default function MasterBarangPage() {
                 const statusInfo = getStockStatus(prod.stock, prod.minStock);
                 const matGradeText = prod.materialGrade || `${prod.material || ''} ${prod.grade || ''}`.trim();
                 const threadText = prod.thread || prod.metric || '-';
+                const isSelected = selectedIds.includes(prod.id);
 
                 return (
-                  <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={prod.id} className={`${isSelected ? 'bg-sky-50/60' : 'hover:bg-slate-50/80'} transition-colors`}>
+                    <td className="py-3 px-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelectOne(prod.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer accent-sky-600"
+                      />
+                    </td>
                     <td className="py-3 px-4">
                       <div className="font-extrabold text-sky-700">{prod.sku}</div>
                     </td>
@@ -637,7 +743,7 @@ export default function MasterBarangPage() {
 
               {paginatedProducts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     Tidak ada produk ditemukan
                   </td>
                 </tr>
@@ -703,7 +809,7 @@ export default function MasterBarangPage() {
               />
               {!formData.name && (
                 <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
-                  💡 Auto Nama: <span className="font-bold text-slate-700">{`${formData.materialGrade} ${formData.thread} ${formData.itemType} ${formData.length} ${formData.finishing}`.replace(/\s+/g, ' ').trim()}</span>
+                  💡 Auto Nama: <span className="font-bold text-slate-700">{[formData.materialGrade, formData.thread, formData.itemType, formData.length, formData.finishing].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()}</span>
                 </p>
               )}
             </div>
@@ -938,6 +1044,30 @@ export default function MasterBarangPage() {
           }}
           title={`Hapus Opsi ${deletingOption.label}`}
           message={`Apakah Anda yakin ingin menghapus opsi "${deletingOption.optionValue}" dari daftar dropdown ${deletingOption.label}?`}
+          isDangerous={true}
+        />
+      )}
+
+      {/* Bulk Delete Selected Confirmation */}
+      {showConfirmBulkDelete && (
+        <ConfirmDialog
+          isOpen={showConfirmBulkDelete}
+          onClose={() => setShowConfirmBulkDelete(false)}
+          onConfirm={handleBulkDeleteSelected}
+          title="Hapus / Nonaktifkan Produk Terpilih"
+          message={`Apakah Anda yakin ingin menonaktifkan ${selectedIds.length} produk yang dicentang?`}
+          isDangerous={true}
+        />
+      )}
+
+      {/* Reset Catalog Confirmation */}
+      {showConfirmResetCatalog && (
+        <ConfirmDialog
+          isOpen={showConfirmResetCatalog}
+          onClose={() => setShowConfirmResetCatalog(false)}
+          onConfirm={handleResetCatalog}
+          title="Reset Katalog Produk"
+          message="Apakah Anda yakin ingin menonaktifkan SELURUH produk aktif yang ada di katalog? Langkah ini berguna jika Anda ingin mengimpor ulang file Excel dari awal."
           isDangerous={true}
         />
       )}
