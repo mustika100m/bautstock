@@ -499,6 +499,44 @@ export default function MasterBarangPage() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'SKU': '',
+        'Material/Grade': 'GR 8.8',
+        'Thread': 'FT',
+        'Jenis Barang': 'Baut Mur Hex M.10-P1.50-K17',
+        'Panjang': '100 MM',
+        'Finishing': 'HTM',
+        'Satuan': 'Pcs',
+        'Stok': 100,
+        'Harga Beli': 2000,
+        'Harga Retail': 3500,
+        'Harga Grosir': 2900,
+        'Lokasi': 'Rak A-01'
+      },
+      {
+        'SKU': '',
+        'Material/Grade': 'SUS 304',
+        'Thread': '',
+        'Jenis Barang': 'Ring Ver M.5(3/16")-5.1x9.2x1.2',
+        'Panjang': '',
+        'Finishing': '',
+        'Satuan': 'Pcs',
+        'Stok': 500,
+        'Harga Beli': 500,
+        'Harga Retail': 1000,
+        'Harga Grosir': 850,
+        'Lokasi': 'Rak B-02'
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Import');
+    XLSX.writeFile(workbook, 'Template_Import_BautStock.xlsx');
+  };
+
   // Excel File Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -926,6 +964,14 @@ export default function MasterBarangPage() {
               <p className="text-[11px] text-slate-400 mt-1 mb-3">
                 Kolom Excel: SKU, Material/Grade, Thread, Jenis Barang, Panjang, Finishing, Satuan, Stok, Harga Beli, Harga Retail, Harga Grosir, Lokasi.
               </p>
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-3 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-all shadow-sm"
+              >
+                <FileText className="w-4 h-4 text-sky-600" />
+                <span>Download Template Excel (.xlsx)</span>
+              </button>
               <input
                 type="file"
                 accept=".xlsx, .xls, .csv"
