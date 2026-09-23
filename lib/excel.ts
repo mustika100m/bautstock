@@ -55,7 +55,11 @@ function getVal(row: any, ...keys: string[]): string {
 export function validateProductImport(
   rawRows: any[],
   existingSkus: Set<string>,
-  existingSpecs: Set<string> = new Set()
+  existingSpecs: Set<string> = new Set(),
+  activeSkus: Set<string> = new Set(),
+  activeSpecs: Set<string> = new Set(),
+  inactiveSkus: Set<string> = new Set(),
+  inactiveSpecs: Set<string> = new Set()
 ): ImportValidationResult {
   const validRows: ImportedRow[] = [];
   const duplicateRows: { rowNumber: number; sku: string; reason: string }[] = [];
@@ -65,7 +69,7 @@ export function validateProductImport(
 
   rawRows.forEach((row, index) => {
     const rowNum = index + 2; // header is row 1
-    let sku = getVal(row, 'SKU', 'sku', 'Kode Barang');
+    let explicitSku = getVal(row, 'SKU', 'sku', 'Kode Barang');
     const materialGrade = getVal(row, 'Material/Grade', 'Material / Grade', 'Material', 'materialGrade', 'material');
     const thread = getVal(row, 'Thread', 'Metric', 'thread', 'metric');
     const itemType = getVal(row, 'Jenis Barang', 'Jenis', 'itemType');
@@ -85,55 +89,48 @@ export function validateProductImport(
     if (!category) category = 'Baut';
 
     if (!itemType && !materialGrade) {
-      errorRows.push({ rowNumber: rowNum, sku: sku || '-', reason: 'Spesifikasi produk (Jenis Barang / Material) tidak boleh kosong' });
+      errorRows.push({ rowNumber: rowNum, sku: explicitSku || '-', reason: 'Spesifikasi produk (Jenis Barang / Material) tidak boleh kosong' });
       return;
     }
 
-    const specKey = `${category}|${itemType}|${thread || 'FT'}|${length || '-'}|${materialGrade || 'GR 4.6'}|-|${finishing || 'HTM'}`.toLowerCase();
+    const specKey = `${category}|${itemType}|${thread}|${length}|${materialGrade}|-|${finishing}`.toLowerCase();
 
     if (seenSpecsInFile.has(specKey)) {
-      duplicateRows.push({ rowNumber: rowNum, sku: sku || '-', reason: 'Spesifikasi produk duplikat dalam file Excel' });
+      duplicateRows.push({ rowNumber: rowNum, sku: explicitSku || '-', reason: 'Spesifikasi produk duplikat dalam file Excel' });
       return;
     }
     seenSpecsInFile.add(specKey);
 
-    if (!sku) {
-      let baseSku = generateAutoSku({ category, itemType, thread, length, materialGrade, finishing });
-      let candidate = baseSku;
-      let counter = 1;
-      while (seenSkusInFile.has(candidate) || existingSkus.has(candidate)) {
-        counter++;
-        candidate = `${baseSku}-${counter}`;
-      }
-      sku = candidate;
-    }
+    const baseSku = generateAutoSku({ category, itemType, thread, length, materialGrade, finishing });
+    let sku = explicitSku || baseSku;
 
     if (seenSkusInFile.has(sku)) {
       duplicateRows.push({ rowNumber: rowNum, sku, reason: 'SKU duplikat dalam file Excel' });
       return;
     }
+    seenSkusInFile.add(sku);
 
-    if (existingSkus.has(sku)) {
-      duplicateRows.push({ rowNumber: rowNum, sku, reason: 'SKU sudah terdaftar di database' });
+    const isActiveInDb = (explicitSku && activeSkus.has(explicitSku)) || activeSpecs.has(specKey) || (activeSpecs.size === 0 && (existingSkus.has(sku) || existingSpecs.has(specKey)));
+
+    if (isActiveInDb) {
+      duplicateRows.push({ rowNumber: rowNum, sku, reason: 'SKU / Spesifikasi barang sudah terdaftar dan aktif di database' });
       return;
     }
 
-    seenSkusInFile.add(sku);
-
     // Auto Name order: [MATL] [THREAD] [JENIS BARANG] [PANJANG] [FINISHING]
-    const name = `${materialGrade || 'GR 4.6'} ${thread || 'FT'} ${itemType || 'Baut Mur Hex'} ${length || ''} ${finishing || ''}`.replace(/\s+/g, ' ').trim();
+    const name = [materialGrade, thread, itemType, length, finishing].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 
     validRows.push({
       sku,
       name,
       category,
-      itemType: itemType || 'Baut Mur Hex',
-      metric: thread || 'FT',
-      length: length || '-',
-      material: materialGrade || 'GR 4.6',
+      itemType: itemType || '',
+      metric: thread || '',
+      length: length || '',
+      material: materialGrade || '',
       grade: '-',
       materialGrade,
-      finishing: finishing || 'HTM',
+      finishing: finishing || '',
       unit,
       stock,
       buyPrice,
