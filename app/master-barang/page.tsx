@@ -127,6 +127,18 @@ export default function MasterBarangPage() {
   // Hidden/removed options state (persisted in localStorage)
   const [hiddenOptions, setHiddenOptions] = useState<{ [key: string]: string[] }>({});
 
+  const [userRole, setUserRole] = useState<string>('ADMIN');
+
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('bautstock_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.role) setUserRole(parsed.role);
+      }
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('bautstock_hidden_spec_options');
@@ -620,7 +632,7 @@ export default function MasterBarangPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {selectedIds.length > 0 && (
+          {userRole !== 'GUDANG' && selectedIds.length > 0 && (
             <button
               onClick={() => setShowConfirmBulkDelete(true)}
               className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all shadow-md shadow-rose-600/20"
@@ -629,21 +641,25 @@ export default function MasterBarangPage() {
               <span>Hapus Terpilih ({selectedIds.length})</span>
             </button>
           )}
-          <button
-            onClick={() => setShowConfirmResetCatalog(true)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all shadow-sm"
-            title="Kosongkan katalog barang aktif untuk re-import Excel"
-          >
-            <Trash2 className="w-4 h-4 text-rose-600" />
-            <span>Reset Katalog</span>
-          </button>
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all shadow-sm"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span>Import Excel</span>
-          </button>
+          {userRole !== 'GUDANG' && (
+            <button
+              onClick={() => setShowConfirmResetCatalog(true)}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all shadow-sm"
+              title="Kosongkan katalog barang aktif untuk re-import Excel"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Reset Katalog</span>
+            </button>
+          )}
+          {userRole !== 'GUDANG' && (
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all shadow-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <span>Import Excel</span>
+            </button>
+          )}
           <button
             onClick={handleOpenAddModal}
             className="flex items-center gap-2 px-4 py-2 text-xs font-extrabold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-all shadow-md shadow-sky-600/20"
