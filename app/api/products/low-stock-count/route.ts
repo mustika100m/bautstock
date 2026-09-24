@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
+      where: { status: 'ACTIVE' },
       select: { stock: true, minStock: true },
     });
     const count = products.filter((p) => p.stock <= p.minStock).length;
