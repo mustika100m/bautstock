@@ -14,6 +14,7 @@ import {
   UploadCloud,
   FileText,
   Copy,
+  Download,
 } from 'lucide-react';
 import { formatRupiah, getStockStatus } from '@/lib/formatters';
 import { Modal } from '@/components/ui/Modal';
@@ -549,6 +550,63 @@ export default function MasterBarangPage() {
     XLSX.writeFile(workbook, 'Template_Import_BautStock.xlsx');
   };
 
+  const handleExportExcel = () => {
+    const listToExport = selectedIds.length > 0
+      ? filteredProducts.filter((p) => selectedIds.includes(p.id))
+      : filteredProducts;
+
+    if (listToExport.length === 0) {
+      showToast('Tidak ada data produk untuk diexport', 'error');
+      return;
+    }
+
+    const exportRows = listToExport.map((p) => {
+      const matGrade = p.materialGrade || (p.material && p.material !== '-' ? `${p.material || ''} ${p.grade && p.grade !== '-' ? p.grade : ''}`.trim() : '');
+      const threadVal = p.thread || (p.metric && p.metric !== '-' ? p.metric : '');
+      const lengthVal = p.length && p.length !== '-' ? p.length : '';
+      const finishingVal = p.finishing && p.finishing !== '-' ? p.finishing : '';
+
+      return {
+        'SKU': p.sku || '',
+        'Nama Produk': p.name || '',
+        'Material/Grade': matGrade,
+        'Thread': threadVal,
+        'Jenis Barang': p.itemType || '',
+        'Panjang': lengthVal,
+        'Finishing': finishingVal,
+        'Satuan': p.unit || 'Pcs',
+        'Stok': Number(p.stock) || 0,
+        'Stok Min': Number(p.minStock) || 0,
+        'Harga Beli': Number(p.buyPrice) || 0,
+        'Harga Retail': Number(p.retailPrice) || 0,
+        'Harga Grosir': Number(p.wholesalePrice) || 0,
+        'Gudang': p.warehouse || 'Gudang Utama',
+        'Lokasi': p.rackLocation || '',
+        'Box Bin': p.boxBin || '',
+        'Barcode': p.barcode || '',
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+
+    const colWidths = Object.keys(exportRows[0] || {}).map((key) => {
+      const maxLen = Math.max(
+        key.length,
+        ...exportRows.map((r: any) => String(r[key] || '').length)
+      );
+      return { wch: Math.min(Math.max(maxLen + 2, 10), 40) };
+    });
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Master Barang');
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    XLSX.writeFile(workbook, `Master_Barang_BautStock_${dateStr}.xlsx`);
+    showToast(`Berhasil mengekspor ${listToExport.length} produk ke Excel!`, 'success');
+  };
+
   // Excel File Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -651,6 +709,14 @@ export default function MasterBarangPage() {
               <span>Reset Katalog</span>
             </button>
           )}
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition-all shadow-sm"
+            title="Download data barang ke file Excel (.xlsx)"
+          >
+            <Download className="w-4 h-4 text-teal-600" />
+            <span>{selectedIds.length > 0 ? `Export Terpilih (${selectedIds.length})` : 'Export Excel'}</span>
+          </button>
           {userRole !== 'GUDANG' && (
             <button
               onClick={() => setIsImportModalOpen(true)}
