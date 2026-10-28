@@ -22,7 +22,7 @@ function getVal(row: any, ...keys: string[]): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { rows, action, userName = 'Admin' } = await req.json();
+    const { rows, action, userName = 'Admin', updateExisting = false } = await req.json();
 
     if (!Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json({ error: 'Tidak ada data yang dikirim' }, { status: 400 });
@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
       activeSkus,
       activeSpecs,
       inactiveSkus,
-      inactiveSpecs
+      inactiveSpecs,
+      updateExisting
     );
 
     // If action is "validate", return validation result
@@ -142,9 +143,148 @@ export async function POST(req: NextRequest) {
           .trim();
 
         try {
-          const prod = await prisma.product.upsert({
-            where: {
-              unique_product_spec: {
+          let prod;
+          if (updateExisting) {
+            // Find existing product by SKU first, or by Spec
+            const existingBySku = await prisma.product.findUnique({
+              where: { sku: finalSku },
+            });
+
+            const existingBySpec = !existingBySku
+              ? await prisma.product.findUnique({
+                  where: {
+                    unique_product_spec: {
+                      category,
+                      itemType: rawItemType,
+                      metric: finalMetric,
+                      length: finalLength,
+                      material: finalMaterial,
+                      grade: '-',
+                      finishing: finalFinishing,
+                    },
+                  },
+                })
+              : null;
+
+            const existingProd = existingBySku || existingBySpec;
+
+            if (existingProd) {
+              const oldStock = existingProd.stock;
+              const newStock = stock;
+
+              prod = await prisma.product.update({
+                where: { id: existingProd.id },
+                data: {
+                  status: 'ACTIVE',
+                  sku: finalSku,
+                  name: autoName,
+                  unit,
+                  warehouse: gudang,
+                  rackLocation: lokasi,
+                  boxBin: boxBin,
+                  minStock: minStock > 0 ? minStock : existingProd.minStock,
+                  barcode: barcode || existingProd.barcode,
+                  stock: newStock,
+                  buyPrice: buyPrice > 0 ? buyPrice : existingProd.buyPrice,
+                  cashPrice: retailPrice > 0 ? retailPrice : existingProd.cashPrice,
+                  tempoPrice: wholesalePrice > 0 ? wholesalePrice : existingProd.tempoPrice,
+                  retailPrice: retailPrice > 0 ? retailPrice : existingProd.retailPrice,
+                  wholesalePrice: wholesalePrice > 0 ? wholesalePrice : existingProd.wholesalePrice,
+                },
+              });
+
+              if (newStock !== oldStock) {
+                const diff = newStock - oldStock;
+                await prisma.stockMovement.create({
+                  data: {
+                    productId: prod.id,
+                    type: 'STOCK_ADJUSTMENT',
+                    refNo: `IMPORT-UPDATE-${prod.sku}`,
+                    qtyIn: diff > 0 ? diff : 0,
+                    qtyOut: diff < 0 ? Math.abs(diff) : 0,
+                    stockBefore: oldStock,
+                    stockAfter: newStock,
+                    userName,
+                    notes: 'Penyesuaian stok via Import Excel (Timpa)',
+                  },
+                });
+              }
+            } else {
+              prod = await prisma.product.create({
+                data: {
+                  sku: finalSku,
+                  name: autoName,
+                  category,
+                  itemType: rawItemType,
+                  metric: finalMetric,
+                  length: finalLength,
+                  material: finalMaterial,
+                  grade: '-',
+                  finishing: finalFinishing,
+                  unit,
+                  stock,
+                  minStock,
+                  buyPrice,
+                  cashPrice: retailPrice,
+                  tempoPrice: wholesalePrice,
+                  retailPrice,
+                  wholesalePrice,
+                  warehouse: gudang,
+                  rackLocation: lokasi,
+                  boxBin: boxBin,
+                  barcode,
+                },
+              });
+
+              if (stock > 0) {
+                await prisma.stockMovement.create({
+                  data: {
+                    productId: prod.id,
+                    type: 'INITIAL_STOCK',
+                    refNo: `IMPORT-${prod.sku}`,
+                    qtyIn: stock,
+                    qtyOut: 0,
+                    stockBefore: 0,
+                    stockAfter: stock,
+                    userName,
+                    notes: 'Import Excel stok awal',
+                  },
+                });
+              }
+            }
+          } else {
+            prod = await prisma.product.upsert({
+              where: {
+                unique_product_spec: {
+                  category,
+                  itemType: rawItemType,
+                  metric: finalMetric,
+                  length: finalLength,
+                  material: finalMaterial,
+                  grade: '-',
+                  finishing: finalFinishing,
+                },
+              },
+              update: {
+                status: 'ACTIVE',
+                sku: finalSku,
+                name: autoName,
+                unit,
+                warehouse: gudang,
+                rackLocation: lokasi,
+                boxBin: boxBin,
+                minStock: minStock > 0 ? minStock : undefined,
+                barcode: barcode || undefined,
+                stock: stock > 0 ? { increment: stock } : undefined,
+                buyPrice: buyPrice > 0 ? buyPrice : undefined,
+                cashPrice: retailPrice > 0 ? retailPrice : undefined,
+                tempoPrice: wholesalePrice > 0 ? wholesalePrice : undefined,
+                retailPrice: retailPrice > 0 ? retailPrice : undefined,
+                wholesalePrice: wholesalePrice > 0 ? wholesalePrice : undefined,
+              },
+              create: {
+                sku: finalSku,
+                name: autoName,
                 category,
                 itemType: rawItemType,
                 metric: finalMetric,
@@ -152,65 +292,38 @@ export async function POST(req: NextRequest) {
                 material: finalMaterial,
                 grade: '-',
                 finishing: finalFinishing,
-              },
-            },
-            update: {
-              status: 'ACTIVE',
-              sku: finalSku,
-              name: autoName,
-              unit,
-              warehouse: gudang,
-              rackLocation: lokasi,
-              boxBin: boxBin,
-              minStock: minStock > 0 ? minStock : undefined,
-              barcode: barcode || undefined,
-              stock: stock > 0 ? { increment: stock } : undefined,
-              buyPrice: buyPrice > 0 ? buyPrice : undefined,
-              cashPrice: retailPrice > 0 ? retailPrice : undefined,
-              tempoPrice: wholesalePrice > 0 ? wholesalePrice : undefined,
-              retailPrice: retailPrice > 0 ? retailPrice : undefined,
-              wholesalePrice: wholesalePrice > 0 ? wholesalePrice : undefined,
-            },
-            create: {
-              sku: finalSku,
-              name: autoName,
-              category,
-              itemType: rawItemType,
-              metric: finalMetric,
-              length: finalLength,
-              material: finalMaterial,
-              grade: '-',
-              finishing: finalFinishing,
-              unit,
-              stock,
-              minStock,
-              buyPrice,
-              cashPrice: retailPrice,
-              tempoPrice: wholesalePrice,
-              retailPrice,
-              wholesalePrice,
-              warehouse: gudang,
-              rackLocation: lokasi,
-              boxBin: boxBin,
-              barcode,
-            },
-          });
-
-          if (stock > 0) {
-            await prisma.stockMovement.create({
-              data: {
-                productId: prod.id,
-                type: 'INITIAL_STOCK',
-                refNo: `IMPORT-${prod.sku}`,
-                qtyIn: stock,
-                qtyOut: 0,
-                stockBefore: prod.stock - stock > 0 ? prod.stock - stock : 0,
-                stockAfter: prod.stock,
-                userName,
-                notes: 'Import Excel stok awal',
+                unit,
+                stock,
+                minStock,
+                buyPrice,
+                cashPrice: retailPrice,
+                tempoPrice: wholesalePrice,
+                retailPrice,
+                wholesalePrice,
+                warehouse: gudang,
+                rackLocation: lokasi,
+                boxBin: boxBin,
+                barcode,
               },
             });
+
+            if (stock > 0) {
+              await prisma.stockMovement.create({
+                data: {
+                  productId: prod.id,
+                  type: 'INITIAL_STOCK',
+                  refNo: `IMPORT-${prod.sku}`,
+                  qtyIn: stock,
+                  qtyOut: 0,
+                  stockBefore: prod.stock - stock > 0 ? prod.stock - stock : 0,
+                  stockAfter: prod.stock,
+                  userName,
+                  notes: 'Import Excel stok awal',
+                },
+              });
+            }
           }
+
           insertedCount++;
         } catch (err: any) {
           console.error('Error importing item:', finalSku, err);
