@@ -13,6 +13,7 @@ export interface ImportedRow {
   finishing: string;
   unit: string;
   stock: number;
+  minStock?: number;
   buyPrice: number;
   cashPrice: number;
   tempoPrice: number;
@@ -34,6 +35,8 @@ export interface ImportValidationResult {
   validRows: ImportedRow[];
   duplicateRows: { rowNumber: number; sku: string; reason: string }[];
   errorRows: ImportError[];
+  updateRowsCount?: number;
+  newRowsCount?: number;
 }
 
 function getVal(row: any, ...keys: string[]): string {
@@ -59,13 +62,16 @@ export function validateProductImport(
   activeSkus: Set<string> = new Set(),
   activeSpecs: Set<string> = new Set(),
   inactiveSkus: Set<string> = new Set(),
-  inactiveSpecs: Set<string> = new Set()
+  inactiveSpecs: Set<string> = new Set(),
+  updateExisting: boolean = false
 ): ImportValidationResult {
   const validRows: ImportedRow[] = [];
   const duplicateRows: { rowNumber: number; sku: string; reason: string }[] = [];
   const errorRows: ImportError[] = [];
   const seenSkusInFile = new Set<string>();
   const seenSpecsInFile = new Set<string>();
+  let updateRowsCount = 0;
+  let newRowsCount = 0;
 
   rawRows.forEach((row, index) => {
     const rowNum = index + 2; // header is row 1
@@ -123,9 +129,15 @@ export function validateProductImport(
 
     const isActiveInDb = (sku && activeSkus.has(sku)) || activeSpecs.has(specKey);
 
-    if (isActiveInDb) {
+    if (isActiveInDb && !updateExisting) {
       duplicateRows.push({ rowNumber: rowNum, sku, reason: 'SKU / Spesifikasi barang sudah terdaftar dan aktif di database' });
       return;
+    }
+
+    if (isActiveInDb) {
+      updateRowsCount++;
+    } else {
+      newRowsCount++;
     }
 
     // Auto Name order: [MATL] [THREAD] [JENIS BARANG] [PANJANG] [FINISHING]
@@ -144,6 +156,7 @@ export function validateProductImport(
       finishing: finishing || '',
       unit,
       stock,
+      minStock,
       buyPrice,
       cashPrice: retailPrice,
       tempoPrice: wholesalePrice,
@@ -156,5 +169,5 @@ export function validateProductImport(
     });
   });
 
-  return { validRows, duplicateRows, errorRows };
+  return { validRows, duplicateRows, errorRows, updateRowsCount, newRowsCount };
 }
