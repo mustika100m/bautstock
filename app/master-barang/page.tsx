@@ -171,6 +171,7 @@ export default function MasterBarangPage() {
   const [importValidation, setImportValidation] = useState<any | null>(null);
   const [importRawRows, setImportRawRows] = useState<any[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [updateExisting, setUpdateExisting] = useState(true);
 
   // Confirm Delete Dialogs
   const [deletingProduct, setDeletingProduct] = useState<any | null>(null);
@@ -617,6 +618,20 @@ export default function MasterBarangPage() {
     showToast(`Berhasil mengekspor ${listToExport.length} produk ke Excel!`, 'success');
   };
 
+  const runValidation = async (rows: any[], shouldUpdate: boolean) => {
+    try {
+      const res = await fetch('/api/products/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, action: 'validate', updateExisting: shouldUpdate }),
+      });
+      const valResult = await res.json();
+      setImportValidation(valResult);
+    } catch (err) {
+      showToast('Gagal memvalidasi data Excel', 'error');
+    }
+  };
+
   // Excel File Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -632,16 +647,7 @@ export default function MasterBarangPage() {
         const data = XLSX.utils.sheet_to_json(ws);
 
         setImportRawRows(data);
-
-        // Validate via API
-        const res = await fetch('/api/products/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rows: data, action: 'validate' }),
-        });
-
-        const valResult = await res.json();
-        setImportValidation(valResult);
+        await runValidation(data, updateExisting);
       } catch (err) {
         showToast('Gagal membaca file Excel', 'error');
       }
@@ -656,7 +662,7 @@ export default function MasterBarangPage() {
       const res = await fetch('/api/products/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows: importRawRows, action: 'commit' }),
+        body: JSON.stringify({ rows: importRawRows, action: 'commit', updateExisting }),
       });
 
       const result = await res.json();
@@ -1044,6 +1050,7 @@ export default function MasterBarangPage() {
           onClose={() => {
             setIsImportModalOpen(false);
             setImportValidation(null);
+            setImportRawRows([]);
           }}
           title="Import Produk dari File Excel"
           maxWidth="3xl"
@@ -1054,7 +1061,7 @@ export default function MasterBarangPage() {
               <UploadCloud className="w-10 h-10 text-sky-500 mx-auto mb-2" />
               <p className="font-bold text-slate-700">Upload File Spreadsheet (.xlsx / .csv)</p>
               <p className="text-[11px] text-slate-400 mt-1 mb-3">
-                Kolom Excel: SKU, Material/Grade, Thread, Jenis Barang, Panjang, Finishing, Satuan, Stok, Harga Beli, Harga Retail, Harga Grosir, Lokasi.
+                Mendukung template standar maupun file format hasil Export Excel (SKU, Nama, Material/Grade, Thread, Jenis, Panjang, Finishing, Satuan, Stok, Harga, Gudang, Lokasi, Box Bin, Barcode).
               </p>
               <button
                 type="button"
@@ -1072,13 +1079,42 @@ export default function MasterBarangPage() {
               />
             </div>
 
+            {/* Checkbox Option: Perbarui / Timpa data produk jika SKU sudah ada */}
+            <label className="flex items-start gap-3 p-3.5 bg-sky-50/70 hover:bg-sky-50 border border-sky-200 rounded-xl cursor-pointer transition-all select-none">
+              <input
+                type="checkbox"
+                checked={updateExisting}
+                onChange={(e) => {
+                  const newVal = e.target.checked;
+                  setUpdateExisting(newVal);
+                  if (importRawRows.length > 0) {
+                    runValidation(importRawRows, newVal);
+                  }
+                }}
+                className="w-4 h-4 mt-0.5 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer accent-sky-600 shrink-0"
+              />
+              <div className="space-y-0.5">
+                <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                  Perbarui / Timpa data produk jika SKU sudah ada
+                </span>
+                <p className="text-[11px] text-slate-500">
+                  Jika dicentang, produk dengan SKU atau spesifikasi yang sudah ada di database akan diperbarui nilainya (harga, stok, lokasi rak, dll), bukan ditolak sebagai duplikat.
+                </p>
+              </div>
+            </label>
+
             {/* Step 2: Validation Summary Screen */}
             {importValidation && (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-center">
-                    <span className="text-[10px] font-bold text-emerald-700 block uppercase">Data Valid</span>
+                    <span className="text-[10px] font-bold text-emerald-700 block uppercase">Data Valid Siap Simpan</span>
                     <span className="text-xl font-black text-emerald-800">{importValidation.validRows?.length || 0}</span>
+                    {updateExisting && importValidation.updateRowsCount !== undefined && (
+                      <span className="text-[10px] text-emerald-600 block mt-0.5 font-medium">
+                        ({importValidation.newRowsCount || 0} baru, {importValidation.updateRowsCount || 0} ditimpa)
+                      </span>
+                    )}
                   </div>
                   <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-center">
                     <span className="text-[10px] font-bold text-amber-700 block uppercase">Duplikat SKU</span>
@@ -1114,7 +1150,10 @@ export default function MasterBarangPage() {
                 <div className="flex justify-end gap-2 border-t pt-3">
                   <button
                     type="button"
-                    onClick={() => setImportValidation(null)}
+                    onClick={() => {
+                      setImportValidation(null);
+                      setImportRawRows([]);
+                    }}
                     className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
                   >
                     Batal
@@ -1125,7 +1164,7 @@ export default function MasterBarangPage() {
                     disabled={isImporting || importValidation.validRows?.length === 0}
                     className="px-5 py-2 font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-xl shadow-md"
                   >
-                    {isImporting ? 'Mengimpor...' : `Konfirmasi Import (${importValidation.validRows?.length} Data Valid)`}
+                    {isImporting ? 'Mengimpor...' : `Konfirmasi Import (${importValidation.validRows?.length} Data)`}
                   </button>
                 </div>
               </div>
