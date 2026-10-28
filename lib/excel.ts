@@ -77,10 +77,14 @@ export function validateProductImport(
     const finishing = getVal(row, 'Finishing', 'finishing');
     const unit = getVal(row, 'Satuan', 'unit') || 'Pcs';
     const stock = Number(getVal(row, 'Stok', 'stock') || 0);
+    const minStock = Number(getVal(row, 'Stok Min', 'Min Stock', 'minStock') || 10);
     const buyPrice = Number(getVal(row, 'Harga Beli', 'Harga Beli (Modal)', 'buyPrice') || 0);
     const retailPrice = Number(getVal(row, 'Harga Retail', 'retailPrice') || 0);
     const wholesalePrice = Number(getVal(row, 'Harga Grosir', 'wholesalePrice') || 0);
-    const lokasi = getVal(row, 'Lokasi', 'location');
+    const gudang = getVal(row, 'Gudang', 'warehouse') || 'Gudang Utama';
+    const lokasi = getVal(row, 'Lokasi', 'location', 'Rak', 'Lokasi Rak') || 'Rak A';
+    const boxBin = getVal(row, 'Box Bin', 'Box/Bin', 'boxBin') || 'A-01';
+    const barcode = getVal(row, 'Barcode', 'barcode') || undefined;
 
     let category = getVal(row, 'Kategori', 'category');
     if (!category && itemType) {
@@ -145,9 +149,10 @@ export function validateProductImport(
       tempoPrice: wholesalePrice,
       retailPrice,
       wholesalePrice,
-      warehouse: 'Gudang Utama',
-      rackLocation: lokasi || 'Rak A',
-      boxBin: 'A-01',
+      warehouse: gudang,
+      rackLocation: lokasi,
+      boxBin,
+      barcode,
     });
   });
 
