@@ -516,6 +516,7 @@ export default function MasterBarangPage() {
     const templateData = [
       {
         'SKU': '',
+        'Nama Produk': '',
         'Material/Grade': 'GR 8.8',
         'Thread': 'FT',
         'Jenis Barang': 'Baut Mur Hex M.10-P1.50-K17',
@@ -523,13 +524,18 @@ export default function MasterBarangPage() {
         'Finishing': 'HTM',
         'Satuan': 'Pcs',
         'Stok': 100,
+        'Stok Min': 10,
         'Harga Beli': 2000,
         'Harga Retail': 3500,
         'Harga Grosir': 2900,
-        'Lokasi': 'Rak A-01'
+        'Gudang': 'Gudang Utama',
+        'Lokasi': 'Rak A-01',
+        'Box Bin': 'A-01',
+        'Barcode': ''
       },
       {
         'SKU': '',
+        'Nama Produk': '',
         'Material/Grade': 'SUS 304',
         'Thread': '',
         'Jenis Barang': 'Ring Ver M.5(3/16")-5.1x9.2x1.2',
@@ -537,10 +543,14 @@ export default function MasterBarangPage() {
         'Finishing': '',
         'Satuan': 'Pcs',
         'Stok': 500,
+        'Stok Min': 20,
         'Harga Beli': 500,
         'Harga Retail': 1000,
         'Harga Grosir': 850,
-        'Lokasi': 'Rak B-02'
+        'Gudang': 'Gudang Utama',
+        'Lokasi': 'Rak B-02',
+        'Box Bin': 'B-02',
+        'Barcode': ''
       }
     ];
 
