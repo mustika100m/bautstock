@@ -94,10 +94,14 @@ export async function POST(req: NextRequest) {
         const finishing = getVal(row, 'Finishing', 'finishing');
         const unit = getVal(row, 'Satuan', 'unit') || 'Pcs';
         const stock = Number(getVal(row, 'Stok', 'stock') || 0);
+        const minStock = Number(getVal(row, 'Stok Min', 'Min Stock', 'minStock') || 10);
         const buyPrice = Number(getVal(row, 'Harga Beli', 'Harga Beli (Modal)', 'buyPrice') || 0);
         const retailPrice = Number(getVal(row, 'Harga Retail', 'retailPrice') || 0);
         const wholesalePrice = Number(getVal(row, 'Harga Grosir', 'wholesalePrice') || 0);
-        const lokasi = getVal(row, 'Lokasi', 'location');
+        const gudang = getVal(row, 'Gudang', 'warehouse') || 'Gudang Utama';
+        const lokasi = getVal(row, 'Lokasi', 'location', 'Rak', 'Lokasi Rak') || 'Rak A';
+        const boxBin = getVal(row, 'Box Bin', 'Box/Bin', 'boxBin') || 'A-01';
+        const barcode = getVal(row, 'Barcode', 'barcode') || null;
 
         let category = getVal(row, 'Kategori', 'category');
         if (!category && itemType) {
@@ -155,9 +159,11 @@ export async function POST(req: NextRequest) {
               sku: finalSku,
               name: autoName,
               unit,
-              warehouse: 'Gudang Utama',
-              rackLocation: lokasi || 'Rak A',
-              boxBin: 'A-01',
+              warehouse: gudang,
+              rackLocation: lokasi,
+              boxBin: boxBin,
+              minStock: minStock > 0 ? minStock : undefined,
+              barcode: barcode || undefined,
               stock: stock > 0 ? { increment: stock } : undefined,
               buyPrice: buyPrice > 0 ? buyPrice : undefined,
               cashPrice: retailPrice > 0 ? retailPrice : undefined,
@@ -177,14 +183,16 @@ export async function POST(req: NextRequest) {
               finishing: finalFinishing,
               unit,
               stock,
+              minStock,
               buyPrice,
               cashPrice: retailPrice,
               tempoPrice: wholesalePrice,
               retailPrice,
               wholesalePrice,
-              warehouse: 'Gudang Utama',
-              rackLocation: lokasi || 'Rak A',
-              boxBin: 'A-01',
+              warehouse: gudang,
+              rackLocation: lokasi,
+              boxBin: boxBin,
+              barcode,
             },
           });
 
